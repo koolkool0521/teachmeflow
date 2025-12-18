@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>통일·독도 심화 시뮬레이션</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React & ReactDOM CDN -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- Babel CDN (For JSX transpilation in browser) -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;700;900&display=swap');
+        body { font-family: 'Pretendard', sans-serif; }
+        @keyframes bounce-short {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+        .animate-bounce-short { animation: bounce-short 2s ease-in-out infinite; }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
+
+        // Lucide Icon Wrapper Component
+        const Icon = ({ name, className = "w-6 h-6" }) => {
+            useEffect(() => {
+                lucide.createIcons();
+            }, [name]);
+            return <i data-lucide={name} className={className}></i>;
+        };
+
+        const App = () => {
+            const [currentTopic, setCurrentTopic] = useState(null); 
+            const [stage, setStage] = useState('menu'); 
+            const [score, setScore] = useState(0);
+            const [diplomacyPower, setDiplomacyPower] = useState(50); 
+            const [quizIndex, setQuizIndex] = useState(0);
+            const [negotiationStep, setNegotiationStep] = useState(0);
+            const [feedback, setFeedback] = useState(null);
+
+            // --- DATA: UNIFICATION ---
+            const unificationData = {
+                timeline: [
+                    { year: '1945', event: '광복과 국토 분단', desc: '8.15 광복 이후 38도선을 경계로 남과 북이 나뉘었습니다.' },
+                    { year: '1950', event: '6.25 전쟁 발발', desc: '민족의 큰 비극이자 남북 갈등이 깊어진 결정적 사건입니다.' },
+                    { year: '1972', event: '7.4 남북 공동 성명', desc: '자주, 평화, 민족 대단결의 통일 3대 원칙을 처음 합의했습니다.' },
+                    { year: '1991', event: '남북 기본 합의서', desc: '남북 관계를 나라와 나라 사이가 아닌 통일을 지향하는 "특수 관계"로 규정했습니다.' },
+                    { year: '2000', event: '6.15 남북 공동 선언', desc: '최초의 남북 정상회담으로 평화 교류의 물꼬를 텄습니다.' },
+                    { year: '2018', event: '판문점 선언', desc: '한반도의 평화와 번영, 통일을 위한 대화가 이어졌습니다.' },
+                ],
+                quizzes: [
+                    {
+                        question: "1991년 남북 기본 합의서에서 정의한 '특수 관계'의 의미는 무엇인가요?",
+                        options: ["국제법상 완전한 남남이다", "나라 간의 관계가 아닌 통일을 지향하는 과정의 관계다", "전쟁을 준비하는 임시 휴전 관계다", "이미 통일이 완료된 상태다"],
+                        answer: 1,
+                        explanation: "이 합의서는 서로의 체제를 인정하면서도 '잠정적인 특수 관계'임을 명시했습니다."
+                    },
+                    {
+                        question: "남북한이 처음으로 통일의 3대 원칙에 합의한 문서의 이름은?",
+                        options: ["6.15 공동 선언", "판문점 선언", "7.4 남북 공동 성명", "남북 기본 합의서"],
+                        answer: 2,
+                        explanation: "1972년 박정희 정부 시절, 자주·평화·민족 대단결의 원칙을 세웠습니다."
+                    },
+                    {
+                        question: "통일 한반도가 유라시아 대륙과 연결될 때 얻는 물류적 이점은?",
+                        options: ["해상 교통로 차단", "철도를 통한 유럽까지의 물류비 절감", "인구 감소 문제 해결", "북한 자원 독점"],
+                        answer: 1,
+                        explanation: "TKR(한반도 종단철도)과 TSR(시베리아 횡단철도) 연결로 물류 혁명이 가능해집니다."
+                    }
+                ],
+                negotiation: [
+                    {
+                        speaker: "일본 외무성 국장",
+                        message: "통일 한국이 탄생하면 일본의 안보적 지위가 위태로워질 수 있다는 우려가 큽니다. 군사력을 확장하려는 것 아닙니까?",
+                        options: [
+                            { text: "통일은 한반도의 비핵화를 의미하며, 이는 동북아 전체의 위협을 제거하는 평화적 조치입니다.", points: 15, power: 10, feedback: "안보적 불안감을 평화의 기회로 승화시킨 훌륭한 답변입니다." },
+                            { text: "우리 군사력은 우리 주권입니다. 일본이 간섭할 영역이 아닙니다.", points: 5, power: -10, feedback: "주권 강조도 좋지만, 외교 현장에서는 상대를 안심시키는 논리가 더 효과적입니다." },
+                            { text: "통일 후에도 미군과의 협력을 유지하며 동북아 안보 균형을 지킬 것입니다.", points: 10, power: 5, feedback: "기존 국제 질서 유지를 강조하여 신뢰를 얻었습니다." }
+                        ]
+                    },
+                    {
+                        speaker: "일본 외무성 국장",
+                        message: "경제적으로도 한국이 북한의 저렴한 노동력과 남한의 기술력을 합치면 일본 기업들에 큰 타격이 될 것 같습니다.",
+                        options: [
+                            { text: "통일 한국은 일본 기업에게도 북한 지역 인프라 투자의 거대한 기회를 제공할 상생 모델입니다.", points: 15, power: 5, feedback: "경제적 이익 공유(Win-Win) 전략은 가장 강력한 설득 도구입니다." },
+                            { text: "일본 기업들도 경쟁력을 키우면 될 문제입니다.", points: 0, power: -15, feedback: "적대적인 태도는 협상을 결렬시킬 수 있습니다." }
+                        ]
+                    },
+                    {
+                        speaker: "일본 외무성 국장",
+                        message: "인도적 문제인 이산가족 상봉이나 문화적 통합은 어떻게 진행할 계획입니까? 혼란이 오지 않을까요?",
+                        options: [
+                            { text: "이미 1991년 합의서부터 쌓아온 교류 협력의 데이터를 바탕으로 단계적 통합을 추진할 것입니다.", points: 15, power: 5, feedback: "역사적 합의를 근거로 준비된 국가임을 증명했습니다." },
+                            { text: "혼란은 불가피하지만 우리가 알아서 해결하겠습니다.", points: 5, power: -5, feedback: "조금 더 체계적인 계획을 보여주는 것이 좋습니다." }
+                        ]
+                    },
+                    {
+                        speaker: "일본 외무성 국장",
+                        message: "마지막으로, 통일 한국은 과거사 문제에 대해 일본과 어떤 관계를 맺길 희망합니까?",
+                        options: [
+                            { text: "진실된 과거 성찰을 바탕으로, 미래 지향적인 동북아의 동반자 관계를 맺고 싶습니다.", points: 20, power: 15, feedback: "도덕적 우위와 미래 비전을 동시에 보여준 최고의 마무입니다." },
+                            { text: "통일의 힘으로 과거의 모든 문제를 힘으로 해결하겠습니다.", points: -10, power: -20, feedback: "외교는 보복이 아닌 협력의 장임을 잊지 마세요." }
+                        ]
+                    }
+                ]
+            };
+
+            // --- DATA: DOKDO ---
+            const dokdoData = {
+                timeline: [
+                    { year: '512년', event: '신라의 우산국 복속', desc: '지증왕 때 이사부 장군이 우산국을 복속시키며 독도가 우리 역사에 처음 등장했습니다.' },
+                    { year: '1454년', event: '세종실록지리지 기록', desc: '"울릉도와 독도 두 섬이 서로 멀지 않아 날씨가 맑으면 바라볼 수 있다"고 기록되었습니다.' },
+                    { year: '17세기 후반', event: '안용복의 활약', desc: '숙종 때 일본에 건너가 독도가 조선의 영토임을 확답받고 일본 어민의 침범을 막았습니다.' },
+                    { year: '1900년', event: '대한제국 칙령 제41호', desc: '독도를 울도군 관할 구역으로 명시하여 근대 법적으로 영토 주권을 선포했습니다.' },
+                    { year: '1946년', event: 'SCAPIN 677 각서', desc: '연합국 최고 사령관 각서에서 독도를 일본의 영역에서 명확히 제외했습니다.' },
+                    { year: '현대', event: '실효적 지배', desc: '우리나라 동해안의 요충지로 경찰이 상주하며 주권을 행사하고 있습니다.' },
+                ],
+                quizzes: [
+                    {
+                        question: "세종실록지리지에 기록된 독도 관련 내용으로 옳은 것은?",
+                        options: ["독도는 무인도라 주인 없는 땅이다", "울릉도와 독도가 서로 보여서 우리 땅이다", "독도는 일본에서 더 잘 보인다", "독도는 농사짓기 좋은 땅이다"],
+                        answer: 1,
+                        explanation: "맑은 날 육안으로 보인다는 기록은 지리적 인접성을 증명하는 중요한 고문헌 근거입니다."
+                    },
+                    {
+                        question: "안용복의 활약이 독도 역사에서 갖는 중요한 의미는?",
+                        options: ["독도에 나무를 많이 심었다", "일본 어민의 침범을 막고 조선 영토임을 확인받았다", "독도에 최초의 건물을 지었다", "일본과 공동 어로 구역을 만들었다"],
+                        answer: 1,
+                        explanation: "안용복은 조선 후기 민간 외교관으로서 독도 주권을 수호하는 데 결정적 역할을 했습니다."
+                    },
+                    {
+                        question: "1900년 대한제국 칙령 제41호의 법적 의미는?",
+                        options: ["독도를 일본에 빌려주었다", "독도를 행정 구역상 울도군에 편입해 주권을 공고히 했다", "독도의 이름을 죽도로 바꾸었다", "독도 어업권을 포기했다"],
+                        answer: 1,
+                        explanation: "근대 국가로서 국제 사회에 독도 주권을 법적으로 공포한 핵심 문건입니다."
+                    }
+                ],
+                negotiation: [
+                    {
+                        speaker: "일본 외무성 대변인",
+                        message: "일본은 1905년 시마네현 고시를 통해 '주인 없는 땅'이었던 독도를 먼저 영토로 편입했습니다. 이것이 우리의 권리입니다.",
+                        options: [
+                            { text: "그보다 5년 전인 1900년, 대한제국은 칙령 제41호를 통해 이미 독도를 공식 행정 구역으로 관리하고 있었습니다.", points: 15, power: 15, feedback: "선점의 원칙을 국제법적 시점으로 완벽히 반박했습니다!" },
+                            { text: "주인이 왜 없습니까? 우리 조상들이 수천 년 전부터 살던 곳입니다.", points: 5, power: -5, feedback: "맞는 말이지만, '칙령 제41호'라는 구체적 법령을 언급하는 것이 훨씬 강력합니다." }
+                        ]
+                    },
+                    {
+                        speaker: "일본 외무성 대변인",
+                        message: "조선 시대 안용복의 진술은 일방적인 주장에 불과합니다. 공식적인 국가 간 합의가 아니지 않습니까?",
+                        options: [
+                            { text: "안용복의 활동 이후 일본 막부(정부)는 '죽도 도해 금지령'을 내려 독도가 조선 영토임을 공식 인정했습니다.", points: 15, power: 10, feedback: "일본 측의 공식 기록을 반박 근거로 삼은 매우 전략적인 선택입니다." },
+                            { text: "안용복은 우리 민족의 영웅이므로 그의 말은 곧 진리입니다.", points: 0, power: -10, feedback: "외교는 증명이지 신념이 아닙니다. 일본 정부의 금지령 기록을 언급하세요." }
+                        ]
+                    },
+                    {
+                        speaker: "일본 외무성 대변인",
+                        message: "독도는 지리적으로 일본 오키 섬과도 가깝습니다. 지리적 타당성은 일본에도 있지 않나요?",
+                        options: [
+                            { text: "울릉도에서는 맑은 날 독도가 보이지만, 오키 섬에서는 불가능합니다. 가시성은 지배권의 가장 기본적 지리 근거입니다.", points: 15, power: 10, feedback: "지리적 가시성 논리는 국제 재판에서도 자주 언급되는 강력한 근거입니다." },
+                            { text: "가까운 건 울릉도지 오키 섬이 아닙니다. 지도를 다시 보세요.", points: 5, power: 0, feedback: "가시성(Visibility)이라는 전문 용어를 사용하면 더 설득력이 높아집니다." }
+                        ]
+                    },
+                    {
+                        speaker: "일본 외무성 대변인",
+                        message: "마지막으로, 제2차 세계대전 후 샌프란시스코 강화 조약에서 독도가 명시되지 않았으므로 일본 영토로 남아야 한다고 봅니다.",
+                        options: [
+                            { text: "조약 전 연합국 각서(SCAPIN 677)에서 독도는 일본 영역에서 명확히 분리되었으며, 이는 조약의 기본 정신입니다.", points: 20, power: 15, feedback: "전후 국제 질서의 핵심인 SCAPIN 677을 언급한 완벽한 마무리입니다." },
+                            { text: "전쟁에서 졌으니 무조건 우리에게 돌려줘야 하는 것 아닙니까?", points: -10, power: -20, feedback: "국제 조약에 대한 지식이 부족하면 협상에서 밀릴 수 있습니다." }
+                        ]
+                    }
+                ]
+            };
+
+            const currentData = currentTopic === 'unification' ? unificationData : dokdoData;
+
+            // --- LOGIC ---
+            const handleQuizAnswer = (idx) => {
+                if (idx === currentData.quizzes[quizIndex].answer) {
+                    setScore(score + 15);
+                    setDiplomacyPower(Math.min(100, diplomacyPower + 5));
+                    setFeedback({ type: 'success', text: "정답입니다! " + currentData.quizzes[quizIndex].explanation });
+                } else {
+                    setDiplomacyPower(Math.max(0, diplomacyPower - 5));
+                    setFeedback({ type: 'error', text: "오답입니다. " + currentData.quizzes[quizIndex].explanation });
+                }
+            };
+
+            const nextQuiz = () => {
+                setFeedback(null);
+                if (quizIndex < currentData.quizzes.length - 1) {
+                    setQuizIndex(quizIndex + 1);
+                } else {
+                    setStage('negotiation');
+                }
+            };
+
+            const handleNegotiation = (points, power, msg) => {
+                setScore(score + points);
+                setDiplomacyPower(Math.max(0, Math.min(100, diplomacyPower + power)));
+                setFeedback({ type: 'info', text: msg });
+            };
+
+            const nextNegotiation = () => {
+                setFeedback(null);
+                if (negotiationStep < currentData.negotiation.length - 1) {
+                    setNegotiationStep(negotiationStep + 1);
+                } else {
+                    setStage('result');
+                }
+            };
+
+            const resetAll = () => {
+                setStage('menu');
+                setCurrentTopic(null);
+                setScore(0);
+                setDiplomacyPower(50);
+                setQuizIndex(0);
+                setNegotiationStep(0);
+                setFeedback(null);
+            };
+
+            return (
+                <div className="min-h-screen p-4 md:p-8">
+                    <div className="max-w-5xl mx-auto bg-slate-800 rounded-[2rem] shadow-[0_0_50px_rgba(0,0,0,0.5)] overflow-hidden border border-slate-700">
+                        
+                        {/* Header */}
+                        <div className="bg-slate-900/50 p-6 border-b border-slate-700 flex flex-wrap justify-between items-center gap-4">
+                            <div className="flex items-center gap-3">
+                                <div className={`p-2 rounded-xl ${currentTopic === 'dokdo' ? 'bg-emerald-500' : 'bg-blue-500'}`}>
+                                    <Icon name={currentTopic === 'dokdo' ? "anchor" : "globe"} className="w-6 h-6 text-white" />
+                                </div>
+                                <div>
+                                    <h1 className="text-lg font-black tracking-tighter uppercase text-white">
+                                        {currentTopic === 'dokdo' ? 'DOKDO DEFENSE COMMAND' : 'PEACE KOREA STRATEGY'}
+                                    </h1>
+                                    <div className="flex gap-1 mt-1">
+                                        {[1,2,3,4].map(s => (
+                                            <div key={s} className={`h-1 w-8 rounded-full ${stage === 'menu' ? 'bg-slate-700' : (currentTopic === 'dokdo' ? 'bg-emerald-500' : 'bg-blue-500')}`} />
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="flex items-center gap-6">
+                                <div className="hidden md:block">
+                                    <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">Diplomacy Power</p>
+                                    <div className="w-40 h-3 bg-slate-700 rounded-full overflow-hidden border border-slate-600">
+                                        <div 
+                                            className={`h-full transition-all duration-1000 ${diplomacyPower > 70 ? 'bg-emerald-400' : diplomacyPower > 40 ? 'bg-blue-400' : 'bg-red-400'}`}
+                                            style={{ width: `${diplomacyPower}%` }}
+                                        />
+                                    </div>
+                                </div>
+                                <div className="text-center">
+                                    <p className="text-[10px] font-bold text-slate-500 uppercase mb-1 text-white">Total Score</p>
+                                    <span className="text-xl font-black text-white">{score}</span>
+                                </div>
+                                {stage !== 'menu' && (
+                                    <button onClick={resetAll} className="bg-slate-700 hover:bg-slate-600 p-2 rounded-lg transition-colors text-white">
+                                        <Icon name="home" className="w-5 h-5" />
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Content */}
+                        <div className="p-6 md:p-12">
+                            {stage === 'menu' && (
+                                <div className="space-y-12 animate-in fade-in duration-700">
+                                    <div className="text-center space-y-4">
+                                        <div className="inline-block px-4 py-1 bg-blue-500/10 border border-blue-500/20 rounded-full text-blue-400 text-xs font-bold tracking-widest uppercase">
+                                            Agent Identification Required
+                                        </div>
+                                        <h2 className="text-4xl md:text-5xl font-black text-white leading-tight">대한민국 국가전략 시뮬레이션</h2>
+                                        <p className="text-slate-400 max-w-2xl mx-auto text-lg">
+                                            최고 수준의 역사적 근거와 외교적 논리를 갖추어야 합니다.
+                                        </p>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                        <button onClick={() => { setCurrentTopic('unification'); setStage('timeline'); }} className="group relative bg-slate-700/50 border border-slate-600 p-10 rounded-[2.5rem] hover:border-blue-500 hover:bg-blue-500/5 transition-all text-left">
+                                            <Icon name="users" className="w-12 h-12 text-blue-500 mb-6 group-hover:scale-110 transition-transform" />
+                                            <h3 className="text-2xl font-bold text-white mb-2">PROJECT: PEACE KOREA</h3>
+                                            <p className="text-slate-400">남북 합의서부터 현대의 통일 비전까지.</p>
+                                        </button>
+                                        <button onClick={() => { setCurrentTopic('dokdo'); setStage('timeline'); }} className="group relative bg-slate-700/50 border border-slate-600 p-10 rounded-[2.5rem] hover:border-emerald-500 hover:bg-emerald-500/5 transition-all text-left">
+                                            <Icon name="map" className="w-12 h-12 text-emerald-500 mb-6 group-hover:scale-110 transition-transform" />
+                                            <h3 className="text-2xl font-bold text-white mb-2">PROJECT: DOKDO DEFENSE</h3>
+                                            <p className="text-slate-400">역사적·지리적 근거로 영토 수호.</p>
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+
+                            {stage === 'timeline' && (
+                                <div className="space-y-12 animate-in slide-in-from-right duration-500">
+                                    <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-700 pb-8">
+                                        <div>
+                                            <h2 className={`text-4xl font-black mb-2 ${currentTopic === 'dokdo' ? 'text-emerald-400' : 'text-blue-400'}`}>HISTORY BRIEFING</h2>
+                                            <p className="text-slate-400">협상 전 핵심 사실을 숙지하십시오.</p>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-8">
+                                        {currentData.timeline.map((item, idx) => (
+                                            <div key={idx} className="relative pl-16 group">
+                                                <div className={`absolute left-4 top-2 w-4 h-4 rounded-full transition-all ${currentTopic === 'dokdo' ? 'bg-emerald-500' : 'bg-blue-500'}`} />
+                                                <div className="bg-slate-900/40 border border-slate-700 p-6 rounded-2xl">
+                                                    <span className="text-sm font-black text-slate-500">{item.year}</span>
+                                                    <h4 className="text-xl font-bold text-white mt-1 mb-2">{item.event}</h4>
+                                                    <p className="text-slate-400">{item.desc}</p>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <button onClick={() => setStage('quiz')} className={`w-full py-6 rounded-2xl font-black text-white text-xl flex items-center justify-center gap-3 ${currentTopic === 'dokdo' ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-blue-600 hover:bg-blue-500'}`}>지식 검증 시작 <Icon name="chevron-right" /></button>
+                                </div>
+                            )}
+
+                            {stage === 'quiz' && (
+                                <div className="max-w-3xl mx-auto space-y-10">
+                                    <div className="text-center">
+                                        <h3 className="text-3xl font-bold text-white">{currentData.quizzes[quizIndex].question}</h3>
+                                    </div>
+                                    <div className="grid gap-4">
+                                        {currentData.quizzes[quizIndex].options.map((opt, idx) => (
+                                            <button key={idx} disabled={feedback !== null} onClick={() => handleQuizAnswer(idx)} className={`p-6 rounded-[1.5rem] border-2 text-left font-bold transition-all text-white ${feedback ? (idx === currentData.quizzes[quizIndex].answer ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400' : 'bg-slate-900/50 opacity-40 border-slate-800') : 'bg-slate-900/50 border-slate-700 hover:border-slate-400'}`}>{opt}</button>
+                                        ))}
+                                    </div>
+                                    {feedback && (
+                                        <div className={`p-8 rounded-[2rem] border-l-8 ${feedback.type === 'success' ? 'bg-emerald-500/10 border-emerald-500 text-emerald-100' : 'bg-red-500/10 border-red-500 text-red-100'}`}>
+                                            <p className="text-2xl font-black">{feedback.type === 'success' ? 'ACCESS GRANTED' : 'ACCESS DENIED'}</p>
+                                            <p className="opacity-80 mt-2">{feedback.text}</p>
+                                            <button onClick={nextQuiz} className="mt-4 bg-white/10 hover:bg-white/20 text-white px-8 py-2 rounded-full font-black text-sm">다음 단계로</button>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {stage === 'negotiation' && (
+                                <div className="space-y-12 animate-in fade-in duration-500">
+                                    <div className="flex flex-col gap-12 max-w-4xl mx-auto text-white">
+                                        <div className="flex gap-6 items-start">
+                                            <div className="w-16 h-16 bg-slate-700 rounded-2xl flex-shrink-0 flex items-center justify-center border-2 border-slate-600 text-3xl">🇯🇵</div>
+                                            <div className="bg-white text-slate-900 p-6 rounded-3xl rounded-tl-none">
+                                                <p className="text-lg italic font-medium">"{currentData.negotiation[negotiationStep].message}"</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex gap-6 items-start flex-row-reverse">
+                                            <div className={`w-16 h-16 rounded-2xl flex-shrink-0 flex items-center justify-center border-2 text-3xl ${currentTopic === 'dokdo' ? 'bg-emerald-500 border-emerald-400' : 'bg-blue-500 border-blue-400'}`}>🇰🇷</div>
+                                            <div className="flex-1 space-y-4">
+                                                {feedback ? (
+                                                    <div className={`p-6 rounded-3xl rounded-tr-none text-white ${currentTopic === 'dokdo' ? 'bg-emerald-600' : 'bg-blue-600'}`}>
+                                                        <p className="text-lg font-bold">전략적 답변을 전달했습니다...</p>
+                                                    </div>
+                                                ) : (
+                                                    <div className="grid gap-3">
+                                                        {currentData.negotiation[negotiationStep].options.map((opt, idx) => (
+                                                            <button key={idx} onClick={() => handleNegotiation(opt.points, opt.power, opt.feedback)} className="bg-slate-800 hover:bg-slate-700 border border-slate-600 p-5 rounded-2xl text-left font-bold text-white transition-all">#{idx+1} {opt.text}</button>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {feedback && (
+                                        <div className="flex flex-col items-center gap-6 mt-12">
+                                            <div className="bg-amber-400 text-slate-900 px-8 py-4 rounded-2xl font-black text-xl">{feedback.text}</div>
+                                            <button onClick={nextNegotiation} className="bg-white text-slate-900 px-12 py-4 rounded-full font-black text-lg">다음 회담 진행</button>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {stage === 'result' && (
+                                <div className="text-center py-10 space-y-12 animate-in zoom-in-90 text-white">
+                                    <div className="relative inline-block">
+                                        <Icon name="award" className={`w-40 h-40 mx-auto ${currentTopic === 'dokdo' ? 'text-emerald-400' : 'text-blue-400'}`} />
+                                        <div className="mt-4 bg-yellow-500 text-slate-900 px-8 py-2 rounded-full font-black text-2xl uppercase">RANK: {score >= 100 ? 'S+' : 'A'}</div>
+                                    </div>
+                                    <h2 className="text-6xl font-black tracking-tighter">MISSION ACCOMPLISHED</h2>
+                                    <div className="flex justify-center gap-8">
+                                        <div className="bg-slate-900/50 p-8 rounded-3xl border border-slate-700 w-48">
+                                            <p className="text-xs text-slate-500 uppercase font-black">Score</p>
+                                            <p className="text-5xl font-black">{score}</p>
+                                        </div>
+                                        <div className="bg-slate-900/50 p-8 rounded-3xl border border-slate-700 w-48">
+                                            <p className="text-xs text-slate-500 uppercase font-black">Diplomacy</p>
+                                            <p className="text-5xl font-black">{diplomacyPower}%</p>
+                                        </div>
+                                    </div>
+                                    <button onClick={resetAll} className="bg-white text-slate-900 px-12 py-5 rounded-2xl font-black text-xl hover:bg-slate-200 transition-all">메뉴로 돌아가기</button>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Footer */}
+                        <div className="bg-slate-900/80 p-6 border-t border-slate-700 flex justify-between items-center text-[10px] font-black text-slate-500 tracking-widest uppercase">
+                            <span>Security Level: Top Secret</span>
+                            <span>&copy; 2024 REPUBLIC OF KOREA DIPLOMATIC CENTER</span>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
