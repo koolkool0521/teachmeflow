@@ -216,7 +216,7 @@
         </div>
     </div>
 
-    <!-- 오버레이: 케이스 선택 화면 -->
+    <!-- Case Select Screen -->
     <div id="case-select-screen" class="absolute inset-0 bg-slate-900/95 z-40 flex items-center justify-center backdrop-blur-md">
         <div class="max-w-6xl w-full p-8 h-full overflow-y-auto">
             <div class="text-center mb-10 pt-10">
@@ -336,6 +336,7 @@
         };
 
         const organReference = {
+            // ... (Previous data)
             digestive: [
                 { id: 'mouth', name: "입 (Mouth)", role: "이로 음식물을 잘게 부수고(저작), 침과 섞어 부드럽게 만듭니다.", sim: "chew" },
                 { id: 'esophagus', name: "식도 (Esophagus)", role: "음식물이 위로 이동하는 통로입니다. 근육의 꿈틀 운동으로 음식물을 내려보냅니다.", sim: "move-down" },
@@ -373,13 +374,13 @@
                 dialogues: ["입부터 대장까지 모든 소화 과정에 문제가 생긴 것 같습니다."],
                 tools: [{id:'stethoscope',name:'청진기',desc:'확인'},{id:'scalpel',name:'메스',desc:'절개'},{id:'forceps',name:'겸자',desc:'제거'},{id:'enzyme',name:'소화효소',desc:'분해'},{id:'nutrient',name:'영양제',desc:'흡수'},{id:'suture',name:'봉합사',desc:'봉합'}],
                 steps: [
-                    {msg:"'청진기'로 복부를 진찰하세요.",action:"use_tool",tool:"stethoscope",target:"stomach",hint:"배 쪽에 청진기를 대보세요.",postMsg:"장 운동 정지 확인."},
+                    {msg:"'청진기'로 복부를 진찰하세요.",action:"use_tool",tool:"stethoscope",target:"stomach",hint:"위장 소리 확인.",postMsg:"장 운동 정지 확인."},
                     {msg:"'입'을 검사하세요.",action:"click_organ",target:"head",hint:"저작 운동 확인.",postMsg:"치아 상태 양호."},
                     {msg:"'겸자'로 식도를 뚫어주세요.",action:"use_tool",tool:"forceps",target:"esophagus",hint:"목 부분.",postMsg:"식도 확보."},
                     {msg:"'위'를 클릭하세요.",action:"click_organ",target:"stomach",hint:"왼쪽 갈비뼈 아래.",postMsg:"위 팽창 확인."},
                     {msg:"'메스'로 위를 절개하세요.",action:"use_tool",tool:"scalpel",target:"stomach",hint:"내부 확인.",postMsg:"절개 완료."},
                     {msg:"'겸자'로 음식물 덩어리를 제거하세요.",action:"use_tool",tool:"forceps",target:"food-lump",hint:"이물질 제거.",postMsg:"이물질 제거됨."},
-                    {msg:"'소화효소'를 뿌려주세요.",action:"use_tool",tool:"enzyme",target:"stomach-inner",hint:"분해 시작.",postMsg:"음식물 분해 중."},
+                    {msg:"'소화효소'를 뿌려주세요.",action:"use_tool",tool:"enzyme",target:"stomach-inner",hint:"분해 시작 (위 전체 클릭 가능).",postMsg:"음식물 분해 중."},
                     {msg:"'영양제'를 소장에 투여하세요.",action:"use_tool",tool:"nutrient",target:"small-intestine",hint:"흡수 기능.",postMsg:"영양소 흡수 재개."},
                     {msg:"대장을 마사지하세요.",action:"click_organ",target:"large-intestine",hint:"수분 흡수.",postMsg:"소화 과정 정상화."}
                 ],
@@ -444,6 +445,7 @@
             }
         };
 
+        // --- Logic ---
         let currentCase = null, currentStepIndex = 0, selectedTool = null, mistakes = 0, patientHealth = 100;
         const els = {
             dialogBox: document.getElementById('dialog-box'), surgeryStage: document.getElementById('surgery-stage'),
@@ -589,7 +591,7 @@
             const step = currentCase.steps[currentStepIndex];
             let isCorrect = false;
 
-            // Alias mapping
+            // Alias mapping to fix bug where stomach parts weren't recognized as stomach
             let checkId = targetId;
             if (step.target === 'stomach' && (targetId === 'stomach-inner' || targetId === 'food-lump')) checkId = 'stomach';
 
@@ -632,39 +634,66 @@
         function renderSurgeryStage(caseId) {
             const bodyPath = `<g id="body-bg" onclick="handleInteraction('body-bg')"><path d="M 150,20 Q 120,20 120,60 Q 120,80 135,90 L 135,100 L 90,110 L 80,250 L 100,250 Q 100,350 90,400 L 100,530 L 200,530 L 210,400 Q 200,350 200,250 L 220,250 L 210,110 L 165,100 L 165,90 Q 180,80 180,60 Q 180,20 150,20 Z" fill="#334155" stroke="#475569" stroke-width="2" class="organ" /></g>`;
             let organs = '';
+            // Backgrounds
             if (caseId !== 'digestive') organs += `<path d="M 155,250 C 175,240 190,260 180,290 C 160,300 150,280 155,250" fill="#b45309" opacity="0.2" />`;
             if (caseId !== 'respiratory') organs += `<path d="M 160,130 C 160,110 190,110 200,130 C 215,160 215,220 200,240 C 170,250 160,230 160,130" fill="#7f1d1d" opacity="0.2" /><path d="M 140,130 C 140,110 110,110 100,130 C 85,160 85,220 100,240 C 130,250 140,230 140,130" fill="#7f1d1d" opacity="0.2" />`;
             if (caseId !== 'sensory') organs += `<path d="M 130,35 C 120,35 120,70 150,70 C 180,70 180,35 170,35 Q 150,25 130,35" fill="#e2e8f0" opacity="0.2" />`;
             
+            // Interactive Layers with HIT AREAS
             if (caseId === 'digestive') {
                 organs += `
+                    <!-- Head -->
                     <circle id="head" onclick="handleInteraction('head')" cx="150" cy="70" r="20" fill="transparent" stroke="#fca5a5" stroke-dasharray="4" class="organ hit-area"/>
-                    <path d="M 150,90 L 150,240" stroke="transparent" stroke-width="40" onclick="handleInteraction('esophagus')" class="hit-area" />
+                    
+                    <!-- Esophagus -->
+                    <path d="M 150,90 L 150,240" class="hit-area" onclick="handleInteraction('esophagus')" />
                     <path id="esophagus" onclick="handleInteraction('esophagus')" d="M 150,90 L 150,240" stroke="#fcd34d" stroke-width="12" class="organ" stroke-opacity="0.5"/>
-                    <path d="M 155,250 C 175,240 190,260 180,300 C 160,310 145,280 155,250" fill="transparent" stroke="transparent" stroke-width="40" onclick="handleInteraction('stomach')" class="hit-area" />
-                    <path id="stomach" onclick="handleInteraction('stomach')" d="M 155,250 C 175,240 190,260 180,300 C 160,310 145,280 155,250" fill="#fef3c7" stroke="#f59e0b" stroke-width="2" class="organ"/>
-                    <g id="food-lump" class="hidden organ" onclick="event.stopPropagation(); handleInteraction('food-lump')"><circle cx="165" cy="275" r="12" fill="#ef4444" /><circle cx="170" cy="285" r="8" fill="#ef4444" /></g>
+                    
+                    <!-- Stomach -->
+                    <path d="M 155,250 C 175,240 190,260 180,300 C 160,310 145,280 155,250" class="hit-area" style="stroke-width:60px;" onclick="handleInteraction('stomach')" />
                     <circle id="stomach-inner" onclick="event.stopPropagation(); handleInteraction('stomach-inner')" cx="165" cy="280" r="20" fill="transparent" class="organ" />
-                    <path d="M 180,300 Q 150,330 160,360 Q 180,350 160,320" fill="transparent" stroke="transparent" stroke-width="40" onclick="handleInteraction('small-intestine')" class="hit-area" />
-                    <path id="small-intestine" onclick="handleInteraction('small-intestine')" d="M 180,300 Q 150,330 160,360 Q 180,350 160,320" fill="none" stroke="#d97706" stroke-width="12" class="organ"/>
-                    <path d="M 120,300 L 120,380 L 180,380 L 180,300" fill="transparent" stroke="transparent" stroke-width="40" onclick="handleInteraction('large-intestine')" class="hit-area" />
-                    <path id="large-intestine" onclick="handleInteraction('large-intestine')" d="M 120,300 L 120,380 L 180,380 L 180,300" fill="none" stroke="#a16207" stroke-width="12" class="organ"/>
+                    <path id="stomach" onclick="handleInteraction('stomach')" d="M 155,250 C 175,240 190,260 180,300 C 160,310 145,280 155,250" fill="#fef3c7" stroke="#f59e0b" stroke-width="2" class="organ"/>
+                    
+                    <!-- Food Lump (Top Layer) -->
+                    <g id="food-lump" class="hidden organ" onclick="event.stopPropagation(); handleInteraction('food-lump')">
+                        <circle cx="165" cy="275" r="15" fill="#ef4444" class="hit-area-fill" style="opacity:0; stroke-width:40px; stroke:white;" /> 
+                        <circle cx="165" cy="275" r="12" fill="#ef4444" />
+                        <circle cx="170" cy="285" r="8" fill="#ef4444" />
+                    </g>
+                    
+                    <!-- Small Intestine (Yellow/Orange, Winding) -->
+                    <path d="M 150,320 Q 180,310 170,340 T 150,360 T 130,340 T 150,320" class="hit-area" onclick="handleInteraction('small-intestine')" />
+                    <path id="small-intestine" onclick="handleInteraction('small-intestine')" d="M 150,320 Q 180,310 170,340 T 150,360 T 130,340 T 150,320" fill="none" stroke="#d97706" stroke-width="12" stroke-linecap="round" class="organ"/>
+                    
+                    <!-- Large Intestine (Brown, Surrounding) -->
+                    <path d="M 120,300 L 120,380 L 180,380 L 180,300" class="hit-area" onclick="handleInteraction('large-intestine')" />
+                    <path id="large-intestine" onclick="handleInteraction('large-intestine')" d="M 120,300 L 120,380 L 180,380 L 180,300" fill="none" stroke="#a16207" stroke-width="18" stroke-linecap="round" stroke-linejoin="round" class="organ"/>
                 `;
             } else if (caseId === 'respiratory') {
                 organs += `
                     <circle id="head" onclick="handleInteraction('head')" cx="150" cy="75" r="15" fill="transparent" stroke="#fca5a5" stroke-width="2" stroke-dasharray="4" class="organ hit-area"/>
-                    <path d="M 150,90 L 150,130 M 150,130 L 130,160 M 150,130 L 170,160" stroke="transparent" stroke-width="40" onclick="handleInteraction('bronchi')" class="hit-area" />
+                    
+                    <path d="M 150,90 L 150,130 M 150,130 L 130,160 M 150,130 L 170,160" class="hit-area" onclick="handleInteraction('bronchi')" />
                     <path id="bronchi" onclick="handleInteraction('bronchi')" d="M 150,90 L 150,130 M 150,130 L 130,160 M 150,130 L 170,160" stroke="#cbd5e1" stroke-width="8" class="organ"/>
-                    <g id="lungs" onclick="handleInteraction('lungs')" class="organ" style="transition: transform 1s"><path d="M 145,140 C 100,140 90,240 145,240 Z" fill="#fca5a5" stroke="#e11d48" opacity="0.9" /><path d="M 155,140 C 200,140 210,240 155,240 Z" fill="#fca5a5" stroke="#e11d48" opacity="0.9" /></g>
+                    
+                    <g id="lungs" onclick="handleInteraction('lungs')" class="organ" style="transition: transform 1s">
+                        <path d="M 145,140 C 100,140 90,240 145,240 Z" fill="#fca5a5" stroke="#e11d48" opacity="0.9" />
+                        <path d="M 155,140 C 200,140 210,240 155,240 Z" fill="#fca5a5" stroke="#e11d48" opacity="0.9" />
+                    </g>
+                    
+                    <path d="M 90,240 Q 150,200 210,240" class="hit-area" onclick="handleInteraction('diaphragm')" />
                     <path id="diaphragm" onclick="handleInteraction('diaphragm')" d="M 90,240 Q 150,200 210,240" fill="none" stroke="#d97706" stroke-width="8" stroke-linecap="round" class="organ hit-area" />
                 `;
             } else if (caseId === 'circulatory') {
                 organs += `
                     <g id="heart" onclick="handleInteraction('heart')" class="organ hit-area" transform="translate(150, 180)"><path d="M 0,-15 C -20,-40 -50,-10 -5,35 C 40,-10 20,-40 0,-15" fill="#991b1b" stroke="#ef4444" stroke-width="2" transform="scale(1.5)" /></g>
-                    <path d="M 150,165 C 150,140 180,140 180,190" stroke="transparent" stroke-width="40" fill="none" onclick="handleInteraction('aorta')" class="hit-area" />
+                    
+                    <path d="M 150,165 C 150,140 180,140 180,190" class="hit-area" onclick="handleInteraction('aorta')" />
                     <path id="aorta" onclick="handleInteraction('aorta')" d="M 150,165 C 150,140 180,140 180,190" stroke="#ef4444" stroke-width="6" stroke-dasharray="4,2" fill="none" class="organ" />
-                    <path d="M 120,165 C 120,190 150,300 120,350" stroke="transparent" stroke-width="40" fill="none" onclick="handleInteraction('veins')" class="hit-area" />
+                    
+                    <path d="M 120,165 C 120,190 150,300 120,350" class="hit-area" onclick="handleInteraction('veins')" />
                     <path id="veins" onclick="handleInteraction('veins')" d="M 120,165 C 120,190 150,300 120,350" stroke="#3b82f6" stroke-width="6" fill="none" class="organ" />
+                    
                     <circle id="blood-flow" r="3" fill="#fff" class="hidden"><animateMotion dur="1s" repeatCount="indefinite" path="M 150,165 C 150,140 180,140 180,190" /></circle>
                 `;
             } else if (caseId === 'sensory') {
