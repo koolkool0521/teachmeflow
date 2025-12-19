@@ -3,415 +3,742 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>통일·독도 심화 시뮬레이션</title>
-    <!-- Tailwind CSS CDN -->
+    <title>초등 6학년 과학 - 닥터 사이언스의 수술실</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- React & ReactDOM CDN -->
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <!-- Babel CDN (For JSX transpilation in browser) -->
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <!-- Lucide Icons CDN -->
     <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Do+Hyeon&family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;700;900&display=swap');
-        body { font-family: 'Pretendard', sans-serif; }
-        @keyframes bounce-short {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-5px); }
+        body { font-family: 'Noto Sans KR', sans-serif; background-color: #0f172a; color: white; }
+        .font-display { font-family: 'Do Hyeon', sans-serif; }
+        .font-title { font-family: 'Black Han Sans', sans-serif; }
+        
+        /* 심박수 모니터 애니메이션 */
+        .heart-rate-line {
+            fill: none;
+            stroke: #22c55e;
+            stroke-width: 2;
+            stroke-dasharray: 1000;
+            stroke-dashoffset: 1000;
+            animation: dash 2s linear infinite;
         }
-        .animate-bounce-short { animation: bounce-short 2s ease-in-out infinite; }
+        .heart-rate-line.danger { stroke: #ef4444; animation-duration: 0.5s; }
+        .heart-rate-line.flat { stroke: #ef4444; stroke-dasharray: 0; animation: none; }
+        
+        @keyframes dash {
+            to { stroke-dashoffset: 0; }
+        }
+
+        /* 수술 도구 스타일 */
+        .tool-btn {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .tool-btn:hover { 
+            transform: translateY(-4px); 
+            background-color: #334155;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .tool-btn.selected { 
+            border-color: #3b82f6; 
+            background-color: #1e3a8a; 
+            box-shadow: 0 0 0 2px #3b82f6;
+            transform: translateY(-2px);
+        }
+
+        /* 장기(Organs) 스타일 */
+        .organ { 
+            transition: all 0.3s ease; 
+            cursor: pointer; 
+            pointer-events: all;
+            filter: drop-shadow(0 0 2px rgba(0,0,0,0.5));
+        }
+        .organ:hover { 
+            filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.8)); 
+            stroke: #fff;
+            stroke-width: 3px;
+        }
+        
+        /* 클릭 영역 확장용 투명 클래스 */
+        .hit-area {
+            fill: transparent;
+            stroke: transparent;
+            stroke-width: 40px; /* 클릭 범위 대폭 확대 */
+            cursor: pointer;
+            pointer-events: all;
+        }
+        
+        .fade-in { animation: fadeIn 0.5s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* 모달 스타일 */
+        .modal-bg { background-color: rgba(0, 0, 0, 0.8); backdrop-filter: blur(4px); }
+        
+        /* 펄스 (클릭 유도) */
+        .pulse-target { animation: target-pulse 1.5s infinite; }
+        @keyframes target-pulse {
+            0% { filter: drop-shadow(0 0 0 rgba(239, 68, 68, 0.7)); }
+            50% { filter: drop-shadow(0 0 15px rgba(239, 68, 68, 0)); }
+            100% { filter: drop-shadow(0 0 0 rgba(239, 68, 68, 0.7)); }
+        }
+
+        /* 수술대 조명 효과 */
+        .spotlight {
+            background: radial-gradient(circle at center, rgba(59, 130, 246, 0.1) 0%, rgba(15, 23, 42, 0) 70%);
+        }
+        
+        /* 스크롤바 커스텀 */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #1e293b; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+
+        /* 미니 시뮬레이터 애니메이션 */
+        @keyframes sim-beat { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.15); } }
+        @keyframes sim-chew { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(10px); } }
+        @keyframes sim-breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+        @keyframes sim-move-down { 0% { transform: translateY(0); } 50% { transform: translateY(20px); } 100% { transform: translateY(0); } }
+        @keyframes sim-contract { 0%, 100% { stroke-width: 10; } 50% { stroke-width: 18; } }
+        @keyframes sim-signal { 0% { offset-distance: 0%; opacity: 1; } 100% { offset-distance: 100%; opacity: 0; } }
+        @keyframes flow { 0% { stroke-dashoffset: 20; } 100% { stroke-dashoffset: 0; } }
+        @keyframes drip { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(20px); opacity: 0; } }
+        
+        .sim-label { font-size: 10px; font-weight: bold; fill: #94a3b8; }
+        .sim-label-active { fill: #facc15; }
     </style>
 </head>
-<body class="bg-slate-900 text-slate-100">
-    <div id="root"></div>
+<body class="h-screen flex flex-col overflow-hidden select-none text-slate-100">
 
-    <script type="text/babel">
-        const { useState, useEffect, useMemo } = React;
+    <!-- 상단: 상태바 -->
+    <header class="bg-slate-900 border-b border-slate-700 p-3 flex justify-between items-center h-16 shrink-0 z-20">
+        <div class="flex items-center gap-4">
+            <div class="flex items-center gap-2 cursor-pointer" onclick="resetGame()">
+                <div class="bg-blue-600 p-1.5 rounded text-white font-bold">Dr.</div>
+                <h1 class="text-xl font-display text-blue-400">사이언스</h1>
+            </div>
+            <div class="hidden md:flex items-center gap-3">
+                <span class="bg-slate-800 rounded-full px-4 py-1 text-sm text-slate-400 border border-slate-700" id="case-name">수술 대기실</span>
+                <button onclick="toggleReferenceBook()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 transition shadow-lg border border-indigo-500">
+                    <i data-lucide="book-open" class="w-3 h-3"></i> 의학 도감
+                </button>
+            </div>
+        </div>
 
-        // Lucide Icon Wrapper Component
-        const Icon = ({ name, className = "w-6 h-6" }) => {
-            useEffect(() => {
-                lucide.createIcons();
-            }, [name]);
-            return <i data-lucide={name} className={className}></i>;
-        };
+        <!-- 바이탈 모니터 -->
+        <div class="flex items-center gap-4 flex-1 justify-end max-w-lg">
+            <div class="flex flex-col items-end mr-2">
+                <span class="text-[10px] text-slate-500 tracking-wider">PATIENT STATUS</span>
+                <span id="patient-status-text" class="text-green-500 font-bold text-sm">STABLE</span>
+            </div>
+            <div class="bg-black border border-slate-700 w-48 h-10 rounded relative overflow-hidden flex items-center shadow-inner">
+                <div class="absolute inset-0 bg-[linear-gradient(90deg,transparent_0%,rgba(34,197,94,0.1)_50%,transparent_100%)] animate-pulse"></div>
+                <svg viewBox="0 0 200 40" class="w-full h-full relative z-10">
+                    <path id="ecg-line" d="M0,20 L20,20 L30,10 L40,30 L50,10 L60,30 L70,20 L200,20" class="heart-rate-line" />
+                </svg>
+            </div>
+            <div class="text-center w-12">
+                <div class="text-[10px] text-slate-500">BPM</div>
+                <div id="bpm-display" class="text-2xl font-mono text-green-500">80</div>
+            </div>
+        </div>
+    </header>
 
-        const App = () => {
-            const [currentTopic, setCurrentTopic] = useState(null); 
-            const [stage, setStage] = useState('menu'); 
-            const [score, setScore] = useState(0);
-            const [diplomacyPower, setDiplomacyPower] = useState(50); 
-            const [quizIndex, setQuizIndex] = useState(0);
-            const [negotiationStep, setNegotiationStep] = useState(0);
-            const [feedback, setFeedback] = useState(null);
+    <!-- 메인 게임 영역 -->
+    <div class="flex flex-1 overflow-hidden">
+        
+        <!-- 왼쪽: 간호사/메시지 패널 -->
+        <aside class="w-80 bg-slate-800 border-r border-slate-700 flex flex-col p-4 shadow-xl z-10 relative">
+            <div class="flex items-center gap-3 mb-4 border-b border-slate-700 pb-4">
+                <div class="w-12 h-12 bg-indigo-500 rounded-full flex items-center justify-center overflow-hidden border-2 border-slate-600 shadow-lg shrink-0">
+                    <i data-lucide="user" class="text-white w-8 h-8"></i>
+                </div>
+                <div>
+                    <div class="text-xs text-indigo-300 font-bold uppercase tracking-wider">Head Nurse</div>
+                    <div class="text-lg font-display text-white">나이팅게일</div>
+                </div>
+            </div>
+            
+            <!-- 대화창 -->
+            <div id="dialog-box" class="flex-1 bg-slate-900/50 rounded-lg p-4 mb-4 overflow-y-auto font-light text-slate-200 text-sm leading-relaxed border border-slate-700 shadow-inner">
+                <p class="mb-2 text-yellow-300">"박사님, 환자들이 대기 중입니다. 집도할 케이스를 선택해 주세요."</p>
+            </div>
 
-            // --- DATA: UNIFICATION ---
-            const unificationData = {
-                timeline: [
-                    { year: '1945', event: '광복과 국토 분단', desc: '8.15 광복 이후 38도선을 경계로 남과 북이 나뉘었습니다.' },
-                    { year: '1950', event: '6.25 전쟁 발발', desc: '민족의 큰 비극이자 남북 갈등이 깊어진 결정적 사건입니다.' },
-                    { year: '1972', event: '7.4 남북 공동 성명', desc: '자주, 평화, 민족 대단결의 통일 3대 원칙을 처음 합의했습니다.' },
-                    { year: '1991', event: '남북 기본 합의서', desc: '남북 관계를 나라와 나라 사이가 아닌 통일을 지향하는 "특수 관계"로 규정했습니다.' },
-                    { year: '2000', event: '6.15 남북 공동 선언', desc: '최초의 남북 정상회담으로 평화 교류의 물꼬를 텄습니다.' },
-                    { year: '2018', event: '판문점 선언', desc: '한반도의 평화와 번영, 통일을 위한 대화가 이어졌습니다.' },
-                ],
-                quizzes: [
-                    {
-                        question: "1991년 남북 기본 합의서에서 정의한 '특수 관계'의 의미는 무엇인가요?",
-                        options: ["국제법상 완전한 남남이다", "나라 간의 관계가 아닌 통일을 지향하는 과정의 관계다", "전쟁을 준비하는 임시 휴전 관계다", "이미 통일이 완료된 상태다"],
-                        answer: 1,
-                        explanation: "이 합의서는 서로의 체제를 인정하면서도 '잠정적인 특수 관계'임을 명시했습니다."
-                    },
-                    {
-                        question: "남북한이 처음으로 통일의 3대 원칙에 합의한 문서의 이름은?",
-                        options: ["6.15 공동 선언", "판문점 선언", "7.4 남북 공동 성명", "남북 기본 합의서"],
-                        answer: 2,
-                        explanation: "1972년 박정희 정부 시절, 자주·평화·민족 대단결의 원칙을 세웠습니다."
-                    },
-                    {
-                        question: "통일 한반도가 유라시아 대륙과 연결될 때 얻는 물류적 이점은?",
-                        options: ["해상 교통로 차단", "철도를 통한 유럽까지의 물류비 절감", "인구 감소 문제 해결", "북한 자원 독점"],
-                        answer: 1,
-                        explanation: "TKR(한반도 종단철도)과 TSR(시베리아 횡단철도) 연결로 물류 혁명이 가능해집니다."
-                    }
-                ],
-                negotiation: [
-                    {
-                        speaker: "일본 외무성 국장",
-                        message: "통일 한국이 탄생하면 일본의 안보적 지위가 위태로워질 수 있다는 우려가 큽니다. 군사력을 확장하려는 것 아닙니까?",
-                        options: [
-                            { text: "통일은 한반도의 비핵화를 의미하며, 이는 동북아 전체의 위협을 제거하는 평화적 조치입니다.", points: 15, power: 10, feedback: "안보적 불안감을 평화의 기회로 승화시킨 훌륭한 답변입니다." },
-                            { text: "우리 군사력은 우리 주권입니다. 일본이 간섭할 영역이 아닙니다.", points: 5, power: -10, feedback: "주권 강조도 좋지만, 외교 현장에서는 상대를 안심시키는 논리가 더 효과적입니다." },
-                            { text: "통일 후에도 미군과의 협력을 유지하며 동북아 안보 균형을 지킬 것입니다.", points: 10, power: 5, feedback: "기존 국제 질서 유지를 강조하여 신뢰를 얻었습니다." }
-                        ]
-                    },
-                    {
-                        speaker: "일본 외무성 국장",
-                        message: "경제적으로도 한국이 북한의 저렴한 노동력과 남한의 기술력을 합치면 일본 기업들에 큰 타격이 될 것 같습니다.",
-                        options: [
-                            { text: "통일 한국은 일본 기업에게도 북한 지역 인프라 투자의 거대한 기회를 제공할 상생 모델입니다.", points: 15, power: 5, feedback: "경제적 이익 공유(Win-Win) 전략은 가장 강력한 설득 도구입니다." },
-                            { text: "일본 기업들도 경쟁력을 키우면 될 문제입니다.", points: 0, power: -15, feedback: "적대적인 태도는 협상을 결렬시킬 수 있습니다." }
-                        ]
-                    },
-                    {
-                        speaker: "일본 외무성 국장",
-                        message: "인도적 문제인 이산가족 상봉이나 문화적 통합은 어떻게 진행할 계획입니까? 혼란이 오지 않을까요?",
-                        options: [
-                            { text: "이미 1991년 합의서부터 쌓아온 교류 협력의 데이터를 바탕으로 단계적 통합을 추진할 것입니다.", points: 15, power: 5, feedback: "역사적 합의를 근거로 준비된 국가임을 증명했습니다." },
-                            { text: "혼란은 불가피하지만 우리가 알아서 해결하겠습니다.", points: 5, power: -5, feedback: "조금 더 체계적인 계획을 보여주는 것이 좋습니다." }
-                        ]
-                    },
-                    {
-                        speaker: "일본 외무성 국장",
-                        message: "마지막으로, 통일 한국은 과거사 문제에 대해 일본과 어떤 관계를 맺길 희망합니까?",
-                        options: [
-                            { text: "진실된 과거 성찰을 바탕으로, 미래 지향적인 동북아의 동반자 관계를 맺고 싶습니다.", points: 20, power: 15, feedback: "도덕적 우위와 미래 비전을 동시에 보여준 최고의 마무입니다." },
-                            { text: "통일의 힘으로 과거의 모든 문제를 힘으로 해결하겠습니다.", points: -10, power: -20, feedback: "외교는 보복이 아닌 협력의 장임을 잊지 마세요." }
-                        ]
-                    }
-                ]
-            };
+            <!-- 힌트/목표 -->
+            <div class="bg-blue-900/20 border border-blue-500/30 p-4 rounded-lg shrink-0">
+                <h3 class="text-blue-400 text-xs font-bold mb-2 flex items-center gap-1 uppercase tracking-wider">
+                    <i data-lucide="crosshair" class="w-3 h-3"></i> Current Objective
+                </h3>
+                <p id="current-objective" class="text-sm text-blue-100 font-bold leading-snug">환자 케이스 선택하기</p>
+            </div>
+        </aside>
 
-            // --- DATA: DOKDO ---
-            const dokdoData = {
-                timeline: [
-                    { year: '512년', event: '신라의 우산국 복속', desc: '지증왕 때 이사부 장군이 우산국을 복속시키며 독도가 우리 역사에 처음 등장했습니다.' },
-                    { year: '1454년', event: '세종실록지리지 기록', desc: '"울릉도와 독도 두 섬이 서로 멀지 않아 날씨가 맑으면 바라볼 수 있다"고 기록되었습니다.' },
-                    { year: '17세기 후반', event: '안용복의 활약', desc: '숙종 때 일본에 건너가 독도가 조선의 영토임을 확답받고 일본 어민의 침범을 막았습니다.' },
-                    { year: '1900년', event: '대한제국 칙령 제41호', desc: '독도를 울도군 관할 구역으로 명시하여 근대 법적으로 영토 주권을 선포했습니다.' },
-                    { year: '1946년', event: 'SCAPIN 677 각서', desc: '연합국 최고 사령관 각서에서 독도를 일본의 영역에서 명확히 제외했습니다.' },
-                    { year: '현대', event: '실효적 지배', desc: '우리나라 동해안의 요충지로 경찰이 상주하며 주권을 행사하고 있습니다.' },
-                ],
-                quizzes: [
-                    {
-                        question: "세종실록지리지에 기록된 독도 관련 내용으로 옳은 것은?",
-                        options: ["독도는 무인도라 주인 없는 땅이다", "울릉도와 독도가 서로 보여서 우리 땅이다", "독도는 일본에서 더 잘 보인다", "독도는 농사짓기 좋은 땅이다"],
-                        answer: 1,
-                        explanation: "맑은 날 육안으로 보인다는 기록은 지리적 인접성을 증명하는 중요한 고문헌 근거입니다."
-                    },
-                    {
-                        question: "안용복의 활약이 독도 역사에서 갖는 중요한 의미는?",
-                        options: ["독도에 나무를 많이 심었다", "일본 어민의 침범을 막고 조선 영토임을 확인받았다", "독도에 최초의 건물을 지었다", "일본과 공동 어로 구역을 만들었다"],
-                        answer: 1,
-                        explanation: "안용복은 조선 후기 민간 외교관으로서 독도 주권을 수호하는 데 결정적 역할을 했습니다."
-                    },
-                    {
-                        question: "1900년 대한제국 칙령 제41호의 법적 의미는?",
-                        options: ["독도를 일본에 빌려주었다", "독도를 행정 구역상 울도군에 편입해 주권을 공고히 했다", "독도의 이름을 죽도로 바꾸었다", "독도 어업권을 포기했다"],
-                        answer: 1,
-                        explanation: "근대 국가로서 국제 사회에 독도 주권을 법적으로 공포한 핵심 문건입니다."
-                    }
-                ],
-                negotiation: [
-                    {
-                        speaker: "일본 외무성 대변인",
-                        message: "일본은 1905년 시마네현 고시를 통해 '주인 없는 땅'이었던 독도를 먼저 영토로 편입했습니다. 이것이 우리의 권리입니다.",
-                        options: [
-                            { text: "그보다 5년 전인 1900년, 대한제국은 칙령 제41호를 통해 이미 독도를 공식 행정 구역으로 관리하고 있었습니다.", points: 15, power: 15, feedback: "선점의 원칙을 국제법적 시점으로 완벽히 반박했습니다!" },
-                            { text: "주인이 왜 없습니까? 우리 조상들이 수천 년 전부터 살던 곳입니다.", points: 5, power: -5, feedback: "맞는 말이지만, '칙령 제41호'라는 구체적 법령을 언급하는 것이 훨씬 강력합니다." }
-                        ]
-                    },
-                    {
-                        speaker: "일본 외무성 대변인",
-                        message: "조선 시대 안용복의 진술은 일방적인 주장에 불과합니다. 공식적인 국가 간 합의가 아니지 않습니까?",
-                        options: [
-                            { text: "안용복의 활동 이후 일본 막부(정부)는 '죽도 도해 금지령'을 내려 독도가 조선 영토임을 공식 인정했습니다.", points: 15, power: 10, feedback: "일본 측의 공식 기록을 반박 근거로 삼은 매우 전략적인 선택입니다." },
-                            { text: "안용복은 우리 민족의 영웅이므로 그의 말은 곧 진리입니다.", points: 0, power: -10, feedback: "외교는 증명이지 신념이 아닙니다. 일본 정부의 금지령 기록을 언급하세요." }
-                        ]
-                    },
-                    {
-                        speaker: "일본 외무성 대변인",
-                        message: "독도는 지리적으로 일본 오키 섬과도 가깝습니다. 지리적 타당성은 일본에도 있지 않나요?",
-                        options: [
-                            { text: "울릉도에서는 맑은 날 독도가 보이지만, 오키 섬에서는 불가능합니다. 가시성은 지배권의 가장 기본적 지리 근거입니다.", points: 15, power: 10, feedback: "지리적 가시성 논리는 국제 재판에서도 자주 언급되는 강력한 근거입니다." },
-                            { text: "가까운 건 울릉도지 오키 섬이 아닙니다. 지도를 다시 보세요.", points: 5, power: 0, feedback: "가시성(Visibility)이라는 전문 용어를 사용하면 더 설득력이 높아집니다." }
-                        ]
-                    },
-                    {
-                        speaker: "일본 외무성 대변인",
-                        message: "마지막으로, 제2차 세계대전 후 샌프란시스코 강화 조약에서 독도가 명시되지 않았으므로 일본 영토로 남아야 한다고 봅니다.",
-                        options: [
-                            { text: "조약 전 연합국 각서(SCAPIN 677)에서 독도는 일본 영역에서 명확히 분리되었으며, 이는 조약의 기본 정신입니다.", points: 20, power: 15, feedback: "전후 국제 질서의 핵심인 SCAPIN 677을 언급한 완벽한 마무리입니다." },
-                            { text: "전쟁에서 졌으니 무조건 우리에게 돌려줘야 하는 것 아닙니까?", points: -10, power: -20, feedback: "국제 조약에 대한 지식이 부족하면 협상에서 밀릴 수 있습니다." }
-                        ]
-                    }
-                ]
-            };
+        <!-- 중앙: 수술대 (시각화 영역) -->
+        <main class="flex-1 bg-slate-950 relative flex flex-col">
+            
+            <!-- 조명 효과 -->
+            <div class="absolute inset-0 spotlight pointer-events-none"></div>
 
-            const currentData = currentTopic === 'unification' ? unificationData : dokdoData;
+            <!-- 수술 화면 (SVG) -->
+            <div id="surgery-stage" class="flex-1 flex items-center justify-center relative z-0 p-4 overflow-hidden">
+                <!-- 여기에 게임 콘텐츠(SVG)가 렌더링됨 -->
+            </div>
 
-            // --- LOGIC ---
-            const handleQuizAnswer = (idx) => {
-                if (idx === currentData.quizzes[quizIndex].answer) {
-                    setScore(score + 15);
-                    setDiplomacyPower(Math.min(100, diplomacyPower + 5));
-                    setFeedback({ type: 'success', text: "정답입니다! " + currentData.quizzes[quizIndex].explanation });
-                } else {
-                    setDiplomacyPower(Math.max(0, diplomacyPower - 5));
-                    setFeedback({ type: 'error', text: "오답입니다. " + currentData.quizzes[quizIndex].explanation });
-                }
-            };
+            <!-- 하단: 도구 모음 (Toolbox) -->
+            <div id="toolbox" class="h-28 bg-slate-800 border-t border-slate-700 p-3 flex justify-center items-center gap-4 shrink-0 z-10 hidden shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.3)]">
+                <!-- 도구 버튼들이 JS로 생성됨 -->
+            </div>
+        </main>
+    </div>
 
-            const nextQuiz = () => {
-                setFeedback(null);
-                if (quizIndex < currentData.quizzes.length - 1) {
-                    setQuizIndex(quizIndex + 1);
-                } else {
-                    setStage('negotiation');
-                }
-            };
+    <!-- 오버레이: 의학 도감 -->
+    <div id="reference-book" class="hidden absolute inset-0 modal-bg z-50 flex items-center justify-center p-4">
+        <div class="bg-slate-800 w-full max-w-5xl h-[85vh] rounded-2xl shadow-2xl border border-slate-600 flex flex-col overflow-hidden relative">
+            <div class="p-4 border-b border-slate-700 flex justify-between items-center bg-slate-900">
+                <h2 class="text-xl font-bold text-blue-400 flex items-center gap-2">
+                    <i data-lucide="book" class="w-6 h-6"></i> 우리 몸 의학 도감 & 시뮬레이터
+                </h2>
+                <button onclick="toggleReferenceBook()" class="text-slate-400 hover:text-white transition">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            <div class="flex flex-1 overflow-hidden">
+                <!-- 사이드바 -->
+                <div class="w-48 bg-slate-800 border-r border-slate-700 p-2 overflow-y-auto">
+                    <button onclick="showRefCategory('digestive')" class="w-full text-left p-3 rounded hover:bg-slate-700 text-sm font-bold text-slate-300 transition">소화 기관</button>
+                    <button onclick="showRefCategory('respiratory')" class="w-full text-left p-3 rounded hover:bg-slate-700 text-sm font-bold text-slate-300 transition">호흡 기관</button>
+                    <button onclick="showRefCategory('circulatory')" class="w-full text-left p-3 rounded hover:bg-slate-700 text-sm font-bold text-slate-300 transition">순환 기관</button>
+                    <button onclick="showRefCategory('sensory')" class="w-full text-left p-3 rounded hover:bg-slate-700 text-sm font-bold text-slate-300 transition">감각/신경계</button>
+                    <button onclick="showRefCategory('muscular')" class="w-full text-left p-3 rounded hover:bg-slate-700 text-sm font-bold text-slate-300 transition">운동 기관</button>
+                </div>
+                <!-- 내용 -->
+                <div id="ref-content" class="flex-1 p-6 overflow-y-auto bg-slate-900/50 scrollbar-hide">
+                    <p class="text-slate-400 text-center mt-20">좌측 메뉴에서 궁금한 기관을 선택하세요.</p>
+                </div>
+            </div>
+        </div>
+    </div>
 
-            const handleNegotiation = (points, power, msg) => {
-                setScore(score + points);
-                setDiplomacyPower(Math.max(0, Math.min(100, diplomacyPower + power)));
-                setFeedback({ type: 'info', text: msg });
-            };
-
-            const nextNegotiation = () => {
-                setFeedback(null);
-                if (negotiationStep < currentData.negotiation.length - 1) {
-                    setNegotiationStep(negotiationStep + 1);
-                } else {
-                    setStage('result');
-                }
-            };
-
-            const resetAll = () => {
-                setStage('menu');
-                setCurrentTopic(null);
-                setScore(0);
-                setDiplomacyPower(50);
-                setQuizIndex(0);
-                setNegotiationStep(0);
-                setFeedback(null);
-            };
-
-            return (
-                <div className="min-h-screen p-4 md:p-8">
-                    <div className="max-w-5xl mx-auto bg-slate-800 rounded-[2rem] shadow-[0_0_50px_rgba(0,0,0,0.5)] overflow-hidden border border-slate-700">
-                        
-                        {/* Header */}
-                        <div className="bg-slate-900/50 p-6 border-b border-slate-700 flex flex-wrap justify-between items-center gap-4">
-                            <div className="flex items-center gap-3">
-                                <div className={`p-2 rounded-xl ${currentTopic === 'dokdo' ? 'bg-emerald-500' : 'bg-blue-500'}`}>
-                                    <Icon name={currentTopic === 'dokdo' ? "anchor" : "globe"} className="w-6 h-6 text-white" />
-                                </div>
-                                <div>
-                                    <h1 className="text-lg font-black tracking-tighter uppercase text-white">
-                                        {currentTopic === 'dokdo' ? 'DOKDO DEFENSE COMMAND' : 'PEACE KOREA STRATEGY'}
-                                    </h1>
-                                    <div className="flex gap-1 mt-1">
-                                        {[1,2,3,4].map(s => (
-                                            <div key={s} className={`h-1 w-8 rounded-full ${stage === 'menu' ? 'bg-slate-700' : (currentTopic === 'dokdo' ? 'bg-emerald-500' : 'bg-blue-500')}`} />
-                                        ))}
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="flex items-center gap-6">
-                                <div className="hidden md:block">
-                                    <p className="text-[10px] font-bold text-slate-500 uppercase mb-1">Diplomacy Power</p>
-                                    <div className="w-40 h-3 bg-slate-700 rounded-full overflow-hidden border border-slate-600">
-                                        <div 
-                                            className={`h-full transition-all duration-1000 ${diplomacyPower > 70 ? 'bg-emerald-400' : diplomacyPower > 40 ? 'bg-blue-400' : 'bg-red-400'}`}
-                                            style={{ width: `${diplomacyPower}%` }}
-                                        />
-                                    </div>
-                                </div>
-                                <div className="text-center">
-                                    <p className="text-[10px] font-bold text-slate-500 uppercase mb-1 text-white">Total Score</p>
-                                    <span className="text-xl font-black text-white">{score}</span>
-                                </div>
-                                {stage !== 'menu' && (
-                                    <button onClick={resetAll} className="bg-slate-700 hover:bg-slate-600 p-2 rounded-lg transition-colors text-white">
-                                        <Icon name="home" className="w-5 h-5" />
-                                    </button>
-                                )}
-                            </div>
+    <!-- 오버레이: 케이스 선택 화면 -->
+    <div id="case-select-screen" class="absolute inset-0 bg-slate-900/95 z-40 flex items-center justify-center backdrop-blur-md">
+        <div class="max-w-6xl w-full p-8 h-full overflow-y-auto">
+            <div class="text-center mb-10 pt-10">
+                <div class="inline-block bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-full mb-3">MEDICAL SIMULATION</div>
+                <h2 class="text-5xl font-title text-white mb-2"><span class="text-blue-500">닥터 사이언스</span>의 수술실</h2>
+                <p class="text-slate-400">오늘 집도할 환자를 선택해 주세요. 정확한 의학 지식이 필요합니다.</p>
+                <button onclick="toggleReferenceBook()" class="mt-4 text-indigo-400 hover:text-indigo-300 underline text-sm">
+                    수술 전 의학 도감 확인하기
+                </button>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 pb-10">
+                <button onclick="startGame('digestive')" class="group bg-slate-800 border border-slate-700 hover:border-yellow-500 hover:bg-slate-750 p-5 rounded-2xl transition-all duration-300 text-left hover:-translate-y-1 shadow-lg">
+                    <div class="flex justify-between items-start mb-3">
+                        <div class="bg-yellow-500/10 p-2 rounded-xl text-yellow-500 group-hover:bg-yellow-500 group-hover:text-white transition-colors">
+                            <i data-lucide="utensils" class="w-6 h-6"></i>
                         </div>
-
-                        {/* Content */}
-                        <div className="p-6 md:p-12">
-                            {stage === 'menu' && (
-                                <div className="space-y-12 animate-in fade-in duration-700">
-                                    <div className="text-center space-y-4">
-                                        <div className="inline-block px-4 py-1 bg-blue-500/10 border border-blue-500/20 rounded-full text-blue-400 text-xs font-bold tracking-widest uppercase">
-                                            Agent Identification Required
-                                        </div>
-                                        <h2 className="text-4xl md:text-5xl font-black text-white leading-tight">대한민국 국가전략 시뮬레이션</h2>
-                                        <p className="text-slate-400 max-w-2xl mx-auto text-lg">
-                                            최고 수준의 역사적 근거와 외교적 논리를 갖추어야 합니다.
-                                        </p>
-                                    </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                        <button onClick={() => { setCurrentTopic('unification'); setStage('timeline'); }} className="group relative bg-slate-700/50 border border-slate-600 p-10 rounded-[2.5rem] hover:border-blue-500 hover:bg-blue-500/5 transition-all text-left">
-                                            <Icon name="users" className="w-12 h-12 text-blue-500 mb-6 group-hover:scale-110 transition-transform" />
-                                            <h3 className="text-2xl font-bold text-white mb-2">PROJECT: PEACE KOREA</h3>
-                                            <p className="text-slate-400">남북 합의서부터 현대의 통일 비전까지.</p>
-                                        </button>
-                                        <button onClick={() => { setCurrentTopic('dokdo'); setStage('timeline'); }} className="group relative bg-slate-700/50 border border-slate-600 p-10 rounded-[2.5rem] hover:border-emerald-500 hover:bg-emerald-500/5 transition-all text-left">
-                                            <Icon name="map" className="w-12 h-12 text-emerald-500 mb-6 group-hover:scale-110 transition-transform" />
-                                            <h3 className="text-2xl font-bold text-white mb-2">PROJECT: DOKDO DEFENSE</h3>
-                                            <p className="text-slate-400">역사적·지리적 근거로 영토 수호.</p>
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
-
-                            {stage === 'timeline' && (
-                                <div className="space-y-12 animate-in slide-in-from-right duration-500">
-                                    <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-700 pb-8">
-                                        <div>
-                                            <h2 className={`text-4xl font-black mb-2 ${currentTopic === 'dokdo' ? 'text-emerald-400' : 'text-blue-400'}`}>HISTORY BRIEFING</h2>
-                                            <p className="text-slate-400">협상 전 핵심 사실을 숙지하십시오.</p>
-                                        </div>
-                                    </div>
-                                    <div className="space-y-8">
-                                        {currentData.timeline.map((item, idx) => (
-                                            <div key={idx} className="relative pl-16 group">
-                                                <div className={`absolute left-4 top-2 w-4 h-4 rounded-full transition-all ${currentTopic === 'dokdo' ? 'bg-emerald-500' : 'bg-blue-500'}`} />
-                                                <div className="bg-slate-900/40 border border-slate-700 p-6 rounded-2xl">
-                                                    <span className="text-sm font-black text-slate-500">{item.year}</span>
-                                                    <h4 className="text-xl font-bold text-white mt-1 mb-2">{item.event}</h4>
-                                                    <p className="text-slate-400">{item.desc}</p>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                    <button onClick={() => setStage('quiz')} className={`w-full py-6 rounded-2xl font-black text-white text-xl flex items-center justify-center gap-3 ${currentTopic === 'dokdo' ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-blue-600 hover:bg-blue-500'}`}>지식 검증 시작 <Icon name="chevron-right" /></button>
-                                </div>
-                            )}
-
-                            {stage === 'quiz' && (
-                                <div className="max-w-3xl mx-auto space-y-10">
-                                    <div className="text-center">
-                                        <h3 className="text-3xl font-bold text-white">{currentData.quizzes[quizIndex].question}</h3>
-                                    </div>
-                                    <div className="grid gap-4">
-                                        {currentData.quizzes[quizIndex].options.map((opt, idx) => (
-                                            <button key={idx} disabled={feedback !== null} onClick={() => handleQuizAnswer(idx)} className={`p-6 rounded-[1.5rem] border-2 text-left font-bold transition-all text-white ${feedback ? (idx === currentData.quizzes[quizIndex].answer ? 'bg-emerald-500/20 border-emerald-500 text-emerald-400' : 'bg-slate-900/50 opacity-40 border-slate-800') : 'bg-slate-900/50 border-slate-700 hover:border-slate-400'}`}>{opt}</button>
-                                        ))}
-                                    </div>
-                                    {feedback && (
-                                        <div className={`p-8 rounded-[2rem] border-l-8 ${feedback.type === 'success' ? 'bg-emerald-500/10 border-emerald-500 text-emerald-100' : 'bg-red-500/10 border-red-500 text-red-100'}`}>
-                                            <p className="text-2xl font-black">{feedback.type === 'success' ? 'ACCESS GRANTED' : 'ACCESS DENIED'}</p>
-                                            <p className="opacity-80 mt-2">{feedback.text}</p>
-                                            <button onClick={nextQuiz} className="mt-4 bg-white/10 hover:bg-white/20 text-white px-8 py-2 rounded-full font-black text-sm">다음 단계로</button>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-
-                            {stage === 'negotiation' && (
-                                <div className="space-y-12 animate-in fade-in duration-500">
-                                    <div className="flex flex-col gap-12 max-w-4xl mx-auto text-white">
-                                        <div className="flex gap-6 items-start">
-                                            <div className="w-16 h-16 bg-slate-700 rounded-2xl flex-shrink-0 flex items-center justify-center border-2 border-slate-600 text-3xl">🇯🇵</div>
-                                            <div className="bg-white text-slate-900 p-6 rounded-3xl rounded-tl-none">
-                                                <p className="text-lg italic font-medium">"{currentData.negotiation[negotiationStep].message}"</p>
-                                            </div>
-                                        </div>
-                                        <div className="flex gap-6 items-start flex-row-reverse">
-                                            <div className={`w-16 h-16 rounded-2xl flex-shrink-0 flex items-center justify-center border-2 text-3xl ${currentTopic === 'dokdo' ? 'bg-emerald-500 border-emerald-400' : 'bg-blue-500 border-blue-400'}`}>🇰🇷</div>
-                                            <div className="flex-1 space-y-4">
-                                                {feedback ? (
-                                                    <div className={`p-6 rounded-3xl rounded-tr-none text-white ${currentTopic === 'dokdo' ? 'bg-emerald-600' : 'bg-blue-600'}`}>
-                                                        <p className="text-lg font-bold">전략적 답변을 전달했습니다...</p>
-                                                    </div>
-                                                ) : (
-                                                    <div className="grid gap-3">
-                                                        {currentData.negotiation[negotiationStep].options.map((opt, idx) => (
-                                                            <button key={idx} onClick={() => handleNegotiation(opt.points, opt.power, opt.feedback)} className="bg-slate-800 hover:bg-slate-700 border border-slate-600 p-5 rounded-2xl text-left font-bold text-white transition-all">#{idx+1} {opt.text}</button>
-                                                        ))}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                    {feedback && (
-                                        <div className="flex flex-col items-center gap-6 mt-12">
-                                            <div className="bg-amber-400 text-slate-900 px-8 py-4 rounded-2xl font-black text-xl">{feedback.text}</div>
-                                            <button onClick={nextNegotiation} className="bg-white text-slate-900 px-12 py-4 rounded-full font-black text-lg">다음 회담 진행</button>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-
-                            {stage === 'result' && (
-                                <div className="text-center py-10 space-y-12 animate-in zoom-in-90 text-white">
-                                    <div className="relative inline-block">
-                                        <Icon name="award" className={`w-40 h-40 mx-auto ${currentTopic === 'dokdo' ? 'text-emerald-400' : 'text-blue-400'}`} />
-                                        <div className="mt-4 bg-yellow-500 text-slate-900 px-8 py-2 rounded-full font-black text-2xl uppercase">RANK: {score >= 100 ? 'S+' : 'A'}</div>
-                                    </div>
-                                    <h2 className="text-6xl font-black tracking-tighter">MISSION ACCOMPLISHED</h2>
-                                    <div className="flex justify-center gap-8">
-                                        <div className="bg-slate-900/50 p-8 rounded-3xl border border-slate-700 w-48">
-                                            <p className="text-xs text-slate-500 uppercase font-black">Score</p>
-                                            <p className="text-5xl font-black">{score}</p>
-                                        </div>
-                                        <div className="bg-slate-900/50 p-8 rounded-3xl border border-slate-700 w-48">
-                                            <p className="text-xs text-slate-500 uppercase font-black">Diplomacy</p>
-                                            <p className="text-5xl font-black">{diplomacyPower}%</p>
-                                        </div>
-                                    </div>
-                                    <button onClick={resetAll} className="bg-white text-slate-900 px-12 py-5 rounded-2xl font-black text-xl hover:bg-slate-200 transition-all">메뉴로 돌아가기</button>
-                                </div>
-                            )}
+                        <span class="text-[10px] font-bold bg-slate-900 px-2 py-1 rounded text-slate-500 uppercase">소화기관</span>
+                    </div>
+                    <h3 class="text-lg font-bold text-white mb-1 group-hover:text-yellow-400 transition-colors">폭식 환자 김먹보</h3>
+                    <p class="text-xs text-slate-400 leading-relaxed">"배가 너무 아파요..." <br>소화 불량 및 위장 장애</p>
+                </button>
+                <button onclick="startGame('respiratory')" class="group bg-slate-800 border border-slate-700 hover:border-sky-500 hover:bg-slate-750 p-5 rounded-2xl transition-all duration-300 text-left hover:-translate-y-1 shadow-lg">
+                    <div class="flex justify-between items-start mb-3">
+                        <div class="bg-sky-500/10 p-2 rounded-xl text-sky-500 group-hover:bg-sky-500 group-hover:text-white transition-colors">
+                            <i data-lucide="wind" class="w-6 h-6"></i>
                         </div>
-
-                        {/* Footer */}
-                        <div className="bg-slate-900/80 p-6 border-t border-slate-700 flex justify-between items-center text-[10px] font-black text-slate-500 tracking-widest uppercase">
-                            <span>Security Level: Top Secret</span>
-                            <span>&copy; 2024 REPUBLIC OF KOREA DIPLOMATIC CENTER</span>
+                        <span class="text-[10px] font-bold bg-slate-900 px-2 py-1 rounded text-slate-500 uppercase">호흡기관</span>
+                    </div>
+                    <h3 class="text-lg font-bold text-white mb-1 group-hover:text-sky-400 transition-colors">숨찬 다이버 박해녀</h3>
+                    <p class="text-xs text-slate-400 leading-relaxed">"숨이 안 쉬어져요..." <br>가로막 경련 및 호흡 곤란</p>
+                </button>
+                <button onclick="startGame('circulatory')" class="group bg-slate-800 border border-slate-700 hover:border-red-500 hover:bg-slate-750 p-5 rounded-2xl transition-all duration-300 text-left hover:-translate-y-1 shadow-lg">
+                    <div class="flex justify-between items-start mb-3">
+                        <div class="bg-red-500/10 p-2 rounded-xl text-red-500 group-hover:bg-red-500 group-hover:text-white transition-colors">
+                            <i data-lucide="heart-pulse" class="w-6 h-6"></i>
                         </div>
+                        <span class="text-[10px] font-bold bg-slate-900 px-2 py-1 rounded text-slate-500 uppercase">순환기관</span>
+                    </div>
+                    <h3 class="text-lg font-bold text-white mb-1 group-hover:text-red-400 transition-colors">심장 멈춘 이회장</h3>
+                    <p class="text-xs text-slate-400 leading-relaxed">"가슴이 꽉 막혀!" <br>심장 펌프 기능 정지</p>
+                </button>
+                <button onclick="startGame('sensory')" class="group bg-slate-800 border border-slate-700 hover:border-pink-500 hover:bg-slate-750 p-5 rounded-2xl transition-all duration-300 text-left hover:-translate-y-1 shadow-lg">
+                    <div class="flex justify-between items-start mb-3">
+                        <div class="bg-pink-500/10 p-2 rounded-xl text-pink-500 group-hover:bg-pink-500 group-hover:text-white transition-colors">
+                            <i data-lucide="eye" class="w-6 h-6"></i>
+                        </div>
+                        <span class="text-[10px] font-bold bg-slate-900 px-2 py-1 rounded text-slate-500 uppercase">감각기관</span>
+                    </div>
+                    <h3 class="text-lg font-bold text-white mb-1 group-hover:text-pink-400 transition-colors">어지러운 나공부</h3>
+                    <p class="text-xs text-slate-400 leading-relaxed">"어지러워요..." <br>신경 전달 장애</p>
+                </button>
+                <button onclick="startGame('muscular')" class="group bg-slate-800 border border-slate-700 hover:border-purple-500 hover:bg-slate-750 p-5 rounded-2xl transition-all duration-300 text-left hover:-translate-y-1 shadow-lg">
+                    <div class="flex justify-between items-start mb-3">
+                        <div class="bg-purple-500/10 p-2 rounded-xl text-purple-500 group-hover:bg-purple-500 group-hover:text-white transition-colors">
+                            <i data-lucide="dumbbell" class="w-6 h-6"></i>
+                        </div>
+                        <span class="text-[10px] font-bold bg-slate-900 px-2 py-1 rounded text-slate-500 uppercase">운동기관</span>
+                    </div>
+                    <h3 class="text-lg font-bold text-white mb-1 group-hover:text-purple-400 transition-colors">팔 부러진 최선수</h3>
+                    <p class="text-xs text-slate-400 leading-relaxed">"팔이 안 움직여요!" <br>골절 및 근육 파열</p>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 결과 화면들 -->
+    <div id="bad-ending-screen" class="hidden absolute inset-0 bg-black/95 z-50 flex items-center justify-center p-4">
+        <div class="newspaper max-w-2xl w-full p-8 shadow-2xl relative animate-[fadeIn_0.5s_ease-out]">
+            <div class="border-b-4 border-black mb-6 pb-2 flex justify-between items-end">
+                <h2 class="text-5xl font-title text-red-700 tracking-tighter">뉴스 특보</h2>
+            </div>
+            <div class="flex gap-8">
+                <div class="flex-1">
+                    <h3 class="text-3xl font-display font-bold mb-6 leading-tight text-slate-900">"닥터 사이언스,<br>충격의 의료 과실"</h3>
+                    <p class="text-justify font-serif text-lg leading-relaxed mb-4 text-slate-800">
+                        수술 과정을 지켜보던 가족들은 <span class="font-bold bg-yellow-200 px-1">"기본적인 의학 지식이 부족하다"</span>며 분통을 터뜨렸다.
+                    </p>
+                </div>
+                <div class="w-48 flex flex-col gap-2">
+                    <div class="w-full h-48 bg-slate-200 flex items-center justify-center border-2 border-black overflow-hidden relative">
+                         <i data-lucide="frown" class="w-20 h-20 text-slate-600 relative z-10"></i>
                     </div>
                 </div>
-            );
+            </div>
+            <button onclick="resetGame()" class="absolute -bottom-16 left-1/2 -translate-x-1/2 bg-red-600 hover:bg-red-700 text-white px-8 py-3 rounded-full font-bold shadow-lg transition text-lg flex items-center gap-2 hover:scale-105">
+                <i data-lucide="rotate-ccw" class="w-5 h-5"></i> 재도전
+            </button>
+        </div>
+    </div>
+
+    <div id="happy-ending-screen" class="hidden absolute inset-0 bg-green-900/90 z-50 flex items-center justify-center p-4">
+        <div class="bg-white max-w-xl w-full p-10 rounded-sm shadow-2xl transform rotate-1 relative paper-texture text-slate-800 animate-[fadeIn_0.5s_ease-out]">
+            <div class="absolute -top-4 -right-4 bg-red-600 text-white w-20 h-20 rounded-full flex items-center justify-center font-bold shadow-lg rotate-12 border-4 border-white opacity-90 text-center leading-tight">수술<br>성공</div>
+            <h2 class="text-3xl font-serif font-bold mb-8 text-center border-b-2 border-slate-100 pb-4 text-slate-700">감사의 편지</h2>
+            <div class="font-serif text-lg leading-relaxed mb-10 space-y-4 text-slate-600 px-4">
+                <p>선생님의 완벽한 수술 덕분에 제 몸이 다시 건강해졌습니다!</p>
+                <div class="bg-green-50 p-4 rounded-lg border-l-4 border-green-500 my-4">
+                    <p class="text-green-800 font-bold mb-1">💡 처방:</p>
+                    <p id="success-reason" class="text-green-700 text-base">--성공 요인--</p>
+                </div>
+            </div>
+            <div class="text-center">
+                <button onclick="resetGame()" class="bg-blue-600 hover:bg-blue-700 text-white px-10 py-4 rounded-full font-bold shadow-xl transition text-lg flex items-center gap-2 mx-auto hover:scale-105">
+                    다음 환자 받기 <i data-lucide="arrow-right" class="w-5 h-5"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const TOOL_ICONS = {
+            'stethoscope': 'stethoscope', 'scanner': 'scan', 'microscope': 'microscope', 
+            'scalpel': 'knife', 'forceps': 'scissors', 'enzyme': 'flask-conical', 'suture': 'syringe',
+            'oxygen': 'wind', 'relaxant': 'droplet', 'hand': 'hand', 'nutrient': 'pill',
+            'defib': 'zap', 'connector': 'link', 'light': 'lightbulb', 'drops': 'droplets', 'drill': 'hammer'
         };
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
+        const organReference = {
+            digestive: [
+                { id: 'mouth', name: "입 (Mouth)", role: "이로 음식물을 잘게 부수고(저작), 침과 섞어 부드럽게 만듭니다.", sim: "chew" },
+                { id: 'esophagus', name: "식도 (Esophagus)", role: "음식물이 위로 이동하는 통로입니다. 근육의 꿈틀 운동으로 음식물을 내려보냅니다.", sim: "move-down" },
+                { id: 'stomach', name: "위 (Stomach)", role: "주머니 모양의 근육질 장기입니다. 위액을 섞어 음식물을 죽처럼 분해(소화)합니다.", sim: "churn" },
+                { id: 'small_intestine', name: "작은창자 (Small Intestine)", role: "소화 기관 중 가장 깁니다. 음식물의 영양소를 흡수합니다.", sim: "absorb" },
+                { id: 'large_intestine', name: "큰창자 (Large Intestine)", role: "소화되고 남은 찌꺼기에서 물을 흡수하고 대변을 만듭니다.", sim: "absorb-water" },
+                { id: 'liver', name: "간 (Liver)", role: "쓸개즙을 만들어 지방 소화를 돕고, 해독 작용을 합니다.", sim: "bile-secretion" },
+                { id: 'gallbladder', name: "쓸개 (Gallbladder)", role: "간에서 만든 쓸개즙을 저장했다가 분비하여 지방 소화를 돕습니다.", sim: "bile-secretion" },
+                { id: 'pancreas', name: "이자 (Pancreas)", role: "이자액(소화 효소)을 만들어 소장으로 분비하여 탄수화물, 단백질, 지방을 모두 소화시킵니다.", sim: "pancreas-juice" }
+            ],
+            respiratory: [
+                { id: 'trachea', name: "기관/기관지", role: "공기가 폐로 이동하는 통로입니다.", sim: "airflow" },
+                { id: 'lungs', name: "폐 (Lung)", role: "몸속의 이산화탄소를 내보내고 산소를 받아들이는 가스 교환이 일어납니다.", sim: "breathe" },
+                { id: 'diaphragm', name: "가로막", role: "폐 아래에 있는 근육판입니다. 호흡 운동을 돕습니다.", sim: "move-updown" }
+            ],
+            circulatory: [
+                { id: 'heart', name: "심장 (Heart)", role: "펌프 작용을 하여 혈액을 온몸으로 순환시킵니다.", sim: "beat" },
+                { id: 'artery', name: "동맥 (Artery)", role: "심장에서 나가는 혈액이 흐르는 혈관입니다. 벽이 두껍고 탄력이 있습니다.", sim: "flow-fast" },
+                { id: 'vein', name: "정맥 (Vein)", role: "온몸을 돌고 심장으로 돌아오는 혈액이 흐르는 혈관입니다.", sim: "flow-slow" }
+            ],
+            sensory: [
+                { id: 'nerve', name: "신경계 (Nervous System)", role: "감각 기관에서 받은 자극을 뇌로 전달하고, 뇌의 명령을 운동 기관으로 전달합니다.", sim: "transmit" },
+                { id: 'brain', name: "뇌 (Brain)", role: "자극을 해석하고 판단하여 적절한 반응을 명령합니다.", sim: "think" }
+            ],
+            muscular: [
+                { id: 'bone', name: "뼈 (Bone)", role: "몸의 형태를 유지하고 내부 기관을 보호합니다. 근육과 연결되어 몸을 지탱합니다.", sim: "bone-support" },
+                { id: 'muscle', name: "근육 (Muscle)", role: "길이가 줄어들거나(수축) 늘어나면서(이완) 뼈를 당겨 몸을 움직이게 합니다.", sim: "contract" }
+            ]
+        };
+
+        const cases = {
+            digestive: {
+                name: "폭식 환자 김먹보",
+                symptoms: "전체 소화 불량",
+                dialogues: ["입부터 대장까지 모든 소화 과정에 문제가 생긴 것 같습니다."],
+                tools: [{id:'stethoscope',name:'청진기',desc:'확인'},{id:'scalpel',name:'메스',desc:'절개'},{id:'forceps',name:'겸자',desc:'제거'},{id:'enzyme',name:'소화효소',desc:'분해'},{id:'nutrient',name:'영양제',desc:'흡수'},{id:'suture',name:'봉합사',desc:'봉합'}],
+                steps: [
+                    {msg:"'청진기'로 복부를 진찰하세요.",action:"use_tool",tool:"stethoscope",target:"stomach",hint:"배 쪽에 청진기를 대보세요.",postMsg:"장 운동 정지 확인."},
+                    {msg:"'입'을 검사하세요.",action:"click_organ",target:"head",hint:"저작 운동 확인.",postMsg:"치아 상태 양호."},
+                    {msg:"'겸자'로 식도를 뚫어주세요.",action:"use_tool",tool:"forceps",target:"esophagus",hint:"목 부분.",postMsg:"식도 확보."},
+                    {msg:"'위'를 클릭하세요.",action:"click_organ",target:"stomach",hint:"왼쪽 갈비뼈 아래.",postMsg:"위 팽창 확인."},
+                    {msg:"'메스'로 위를 절개하세요.",action:"use_tool",tool:"scalpel",target:"stomach",hint:"내부 확인.",postMsg:"절개 완료."},
+                    {msg:"'겸자'로 음식물 덩어리를 제거하세요.",action:"use_tool",tool:"forceps",target:"food-lump",hint:"이물질 제거.",postMsg:"이물질 제거됨."},
+                    {msg:"'소화효소'를 뿌려주세요.",action:"use_tool",tool:"enzyme",target:"stomach-inner",hint:"분해 시작.",postMsg:"음식물 분해 중."},
+                    {msg:"'영양제'를 소장에 투여하세요.",action:"use_tool",tool:"nutrient",target:"small-intestine",hint:"흡수 기능.",postMsg:"영양소 흡수 재개."},
+                    {msg:"대장을 마사지하세요.",action:"click_organ",target:"large-intestine",hint:"수분 흡수.",postMsg:"소화 과정 정상화."}
+                ],
+                successMsg: "소화와 흡수 과정을 정상화했습니다."
+            },
+            respiratory: {
+                name: "숨찬 다이버 박해녀",
+                symptoms: "심각한 호흡 곤란",
+                dialogues: ["호흡 곤란 환자입니다."],
+                tools: [{id:'oxygen',name:'산소 마스크',desc:'산소'},{id:'forceps',name:'겸자',desc:'이물질'},{id:'relaxant',name:'이완제',desc:'근육'},{id:'hand',name:'손',desc:'마사지'}],
+                steps: [
+                    {msg:"'겸자'로 기도를 확보하세요.",action:"use_tool",tool:"forceps",target:"head",hint:"입 안.",postMsg:"기도 확보."},
+                    {msg:"'기관지'를 확인하세요.",action:"click_organ",target:"bronchi",hint:"폐로 가는 길.",postMsg:"통로 정상."},
+                    {msg:"'산소 마스크'를 씌우세요.",action:"use_tool",tool:"oxygen",target:"head",hint:"산소 공급.",postMsg:"산소 공급 중."},
+                    {msg:"'가로막'을 찾으세요.",action:"click_organ",target:"diaphragm",hint:"폐 아래.",postMsg:"경직 확인."},
+                    {msg:"'이완제'를 주사하세요.",action:"use_tool",tool:"relaxant",target:"diaphragm",hint:"근육 이완.",postMsg:"가로막 이완됨."},
+                    {msg:"'손'으로 가로막을 당기세요.",action:"use_tool",tool:"hand",target:"diaphragm",hint:"호흡 유도.",postMsg:"자가 호흡 회복!"}
+                ],
+                successMsg: "기도 확보 및 호흡 운동 정상화."
+            },
+            circulatory: {
+                name: "심장 멈춘 이회장",
+                symptoms: "심정지",
+                dialogues: ["심정지 환자입니다."],
+                tools: [{id:'stethoscope',name:'청진기',desc:'진찰'},{id:'defib',name:'제세동기',desc:'충격'},{id:'connector',name:'혈관 튜브',desc:'연결'},{id:'scanner',name:'스캐너',desc:'확인'}],
+                steps: [
+                    {msg:"'청진기'로 심장을 확인하세요.",action:"use_tool",tool:"stethoscope",target:"heart",hint:"가슴 중앙.",postMsg:"심박 정지."},
+                    {msg:"'제세동기'를 사용하세요.",action:"use_tool",tool:"defib",target:"heart",hint:"전기 충격.",postMsg:"심박 재개."},
+                    {msg:"'혈관 튜브'로 동맥을 연결하세요.",action:"use_tool",tool:"connector",target:"aorta",hint:"나가는 혈관.",postMsg:"동맥 연결."},
+                    {msg:"정맥을 확인하세요.",action:"click_organ",target:"veins",hint:"돌아오는 혈관.",postMsg:"정맥 확인."},
+                    {msg:"'스캐너'로 전신을 확인하세요.",action:"use_tool",tool:"scanner",target:"body-bg",hint:"전신 순환.",postMsg:"순환 정상."}
+                ],
+                successMsg: "혈액 순환 시스템 복구."
+            },
+            sensory: {
+                name: "어지러운 나공부",
+                symptoms: "감각 이상",
+                dialogues: ["신경계를 확인하세요."],
+                tools: [{id:'light',name:'불빛',desc:'자극'},{id:'microscope',name:'현미경',desc:'관찰'},{id:'connector',name:'신경 튜브',desc:'연결'},{id:'scanner',name:'스캐너',desc:'뇌'}],
+                steps: [
+                    {msg:"'불빛'으로 눈을 검사하세요.",action:"use_tool",tool:"light",target:"eye-left",hint:"동공 반응.",postMsg:"반응 없음."},
+                    {msg:"'현미경'으로 시신경을 보세요.",action:"use_tool",tool:"microscope",target:"eye-left",hint:"손상 확인.",postMsg:"신경 끊어짐."},
+                    {msg:"'신경 튜브'로 연결하세요.",action:"use_tool",tool:"connector",target:"brain",hint:"뇌로 연결.",postMsg:"신경 연결됨."},
+                    {msg:"'스캐너'로 뇌를 확인하세요.",action:"use_tool",tool:"scanner",target:"brain",hint:"뇌 활동.",postMsg:"뇌 활성화."},
+                    {msg:"손을 클릭해 반응을 보세요.",action:"click_organ",target:"hand-area",hint:"운동 신경.",postMsg:"반응 정상."}
+                ],
+                successMsg: "신경 전달 경로 회복."
+            },
+            muscular: {
+                name: "팔 부러진 최선수",
+                symptoms: "골절",
+                dialogues: ["골절 환자입니다."],
+                tools: [{id:'scanner',name:'X-ray',desc:'촬영'},{id:'hand',name:'손',desc:'정복'},{id:'drill',name:'드릴',desc:'고정'},{id:'suture',name:'봉합사',desc:'연결'},{id:'relaxant',name:'영양제',desc:'강화'}],
+                steps: [
+                    {msg:"'X-ray'로 팔을 찍으세요.",action:"use_tool",tool:"scanner",target:"arm-area",hint:"뼈 상태.",postMsg:"골절 확인."},
+                    {msg:"'손'으로 뼈를 맞추세요.",action:"use_tool",tool:"hand",target:"broken-bone",hint:"정복.",postMsg:"뼈 정복."},
+                    {msg:"'드릴'로 고정하세요.",action:"use_tool",tool:"drill",target:"broken-bone",hint:"고정.",postMsg:"핀 고정."},
+                    {msg:"'봉합사'로 근육을 이으세요.",action:"use_tool",tool:"suture",target:"biceps",hint:"근육 연결.",postMsg:"근육 봉합."},
+                    {msg:"'영양제'를 투여하세요.",action:"use_tool",tool:"relaxant",target:"biceps",hint:"기능 회복.",postMsg:"팔 움직임 회복."}
+                ],
+                successMsg: "운동 기능 회복."
+            }
+        };
+
+        let currentCase = null, currentStepIndex = 0, selectedTool = null, mistakes = 0, patientHealth = 100;
+        const els = {
+            dialogBox: document.getElementById('dialog-box'), surgeryStage: document.getElementById('surgery-stage'),
+            toolbox: document.getElementById('toolbox'), caseSelectScreen: document.getElementById('case-select-screen'),
+            headerCaseName: document.getElementById('case-name'), patientStatusText: document.getElementById('patient-status-text'),
+            bpmDisplay: document.getElementById('bpm-display'), ecgLine: document.getElementById('ecg-line'),
+            currentObjective: document.getElementById('current-objective'), badEndingScreen: document.getElementById('bad-ending-screen'),
+            happyEndingScreen: document.getElementById('happy-ending-screen'), successReason: document.getElementById('success-reason'),
+            referenceBook: document.getElementById('reference-book'), refContent: document.getElementById('ref-content')
+        };
+
+        function startGame(caseId) {
+            currentCase = cases[caseId]; currentStepIndex = 0; selectedTool = null; mistakes = 0; patientHealth = 100;
+            els.caseSelectScreen.classList.add('hidden'); els.toolbox.classList.remove('hidden');
+            els.headerCaseName.innerText = `집도 중: ${currentCase.name}`; updateStatus();
+            els.dialogBox.innerHTML = currentCase.dialogues.map(d => `<p class="mb-3">- ${d}</p>`).join('');
+            renderTools(); renderSurgeryStage(caseId); nextStep();
+        }
+        function resetGame() {
+            els.happyEndingScreen.classList.add('hidden'); els.badEndingScreen.classList.add('hidden');
+            els.caseSelectScreen.classList.remove('hidden'); els.toolbox.classList.add('hidden'); els.surgeryStage.innerHTML = '';
+        }
+        function toggleReferenceBook() {
+            els.referenceBook.classList.toggle('hidden');
+            if(!els.referenceBook.classList.contains('hidden')) showRefCategory('digestive');
+        }
+        function showRefCategory(cat) {
+            const data = organReference[cat];
+            let html = `<h3 class="text-2xl font-bold mb-4 text-blue-400 border-b border-slate-600 pb-2">${cat.toUpperCase()}</h3><div class="grid gap-6 grid-cols-1 md:grid-cols-2">`;
+            data.forEach(item => {
+                html += `<div class="bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-lg relative overflow-hidden group">
+                    <div class="flex justify-between items-start mb-3"><strong class="text-lg text-yellow-400">${item.name}</strong></div>
+                    <p class="text-slate-300 text-sm leading-relaxed mb-4 min-h-[40px]">${item.role}</p>
+                    ${item.sim !== 'none' ? `<div id="sim-container-${item.id}" class="h-48 bg-slate-900 rounded-lg flex flex-col items-center justify-center border border-slate-700 relative overflow-hidden"><button onclick="runMiniSim('${item.id}', '${item.sim}')" class="bg-blue-600 hover:bg-blue-500 text-white text-xs px-3 py-1 rounded-full transition flex items-center gap-1"><i data-lucide="play" class="w-3 h-3"></i> 시뮬레이터 실행</button></div>` : ''}
+                </div>`;
+            });
+            html += `</div>`;
+            els.refContent.innerHTML = html; lucide.createIcons();
+        }
+
+        // --- Interactive Mini Simulators ---
+        window.simAction = function(action) {
+            if(action === 'chew') {
+                const jaw = document.getElementById('sim-jaw');
+                const food = document.getElementById('sim-food');
+                jaw.style.animation = "sim-chew 0.5s 3";
+                setTimeout(() => {
+                    food.innerHTML = `<circle cx="45" cy="50" r="3" fill="#ef4444" /><circle cx="55" cy="50" r="3" fill="#ef4444" /><circle cx="50" cy="45" r="3" fill="#ef4444" />`;
+                }, 500);
+            } else if(action === 'churn') {
+                const stomach = document.getElementById('sim-stomach-shape');
+                const food = document.getElementById('sim-stomach-food');
+                stomach.style.animation = "sim-contract 1s 3";
+                setTimeout(() => { food.setAttribute('fill', '#facc15'); }, 1000);
+            } else if(action === 'stimulate') {
+                const signal = document.getElementById('sim-nerve-signal');
+                const brain = document.getElementById('sim-brain');
+                signal.style.animation = 'none'; void signal.offsetWidth; 
+                signal.style.animation = "sim-signal 1.5s linear forwards";
+                setTimeout(() => {
+                    brain.setAttribute('fill', '#f472b6'); setTimeout(() => brain.setAttribute('fill', '#475569'), 500);
+                }, 1500);
+            } else if(action === 'muscle-contract') {
+                document.getElementById('sim-arm-group').setAttribute('transform', 'rotate(-45, 100, 75)');
+                document.getElementById('sim-biceps').setAttribute('d', 'M 60,70 Q 100,60 130,75');
+                document.getElementById('sim-biceps').setAttribute('stroke-width', '12');
+            } else if(action === 'muscle-relax') {
+                document.getElementById('sim-arm-group').setAttribute('transform', 'rotate(0, 100, 75)');
+                document.getElementById('sim-biceps').setAttribute('d', 'M 60,70 Q 100,70 130,75');
+                document.getElementById('sim-biceps').setAttribute('stroke-width', '8');
+            }
+        };
+
+        function runMiniSim(id, type) {
+            const container = document.getElementById(`sim-container-${id}`);
+            container.innerHTML = ''; 
+            
+            let content = `<div class="relative w-full h-full flex-1 bg-slate-800/50 flex items-center justify-center"><svg id="sim-svg" viewBox="0 0 200 150" class="w-full h-full">`;
+            let controls = '';
+
+            if (type === 'chew') {
+                content += `<text x="10" y="20" class="sim-label">입</text><path d="M 50,40 Q 100,10 150,40" fill="#fca5a5" stroke="#fff" stroke-width="2" /><g id="sim-jaw"><path d="M 55,60 Q 100,90 145,60" fill="#fca5a5" stroke="#fff" stroke-width="2" /></g><g id="sim-food"><circle cx="100" cy="50" r="10" fill="#ef4444" /></g></svg></div>`;
+                controls = `<button onclick="simAction('chew')" class="bg-blue-600 hover:bg-blue-500 text-white text-xs px-3 py-1 rounded m-2">씹기</button>`;
+            } else if (type === 'churn') {
+                content += `<text x="10" y="20" class="sim-label">위</text><path id="sim-stomach-shape" d="M 60,40 Q 40,80 100,90 Q 160,80 140,40 Q 100,20 60,40" fill="#fef3c7" stroke="#f59e0b" stroke-width="3" /><circle id="sim-stomach-food" cx="100" cy="60" r="8" fill="#ef4444" /></svg></div>`;
+                controls = `<button onclick="simAction('churn')" class="bg-blue-600 hover:bg-blue-500 text-white text-xs px-3 py-1 rounded m-2">소화</button>`;
+            } else if (type === 'bile-secretion') {
+                content += `<text x="10" y="20" class="sim-label">간</text><text x="80" y="30" class="sim-label">쓸개</text><path d="M 50,20 C 20,20 20,60 50,70 L 100,70 L 100,20 Z" fill="#581c87" opacity="0.8" /><circle cx="80" cy="60" r="10" fill="#16a34a" /><path d="M 80,70 L 80,100" stroke="#16a34a" stroke-width="4" /><circle cx="80" cy="60" r="5" fill="#a3e635" style="animation: drip 2s infinite;" /></svg></div>`;
+            } else if (type === 'pancreas-juice') {
+                content += `<text x="10" y="20" class="sim-label">이자</text><path d="M 30,50 L 120,50 Q 140,50 120,80 L 30,80 Z" fill="#fcd34d" /><circle cx="80" cy="65" r="3" fill="#fff" style="animation: drip 1.5s infinite;" /><circle cx="60" cy="65" r="3" fill="#fff" style="animation: drip 1.5s infinite 0.5s;" /></svg></div>`;
+            } else if (type === 'absorb') {
+                 content += `<svg viewBox="0 0 100 100" class="w-full h-full"><path d="M 10,50 Q 30,30 50,50 Q 70,70 90,50" fill="none" stroke="#d97706" stroke-width="8" /><circle cx="50" cy="50" r="3" fill="#fbbf24"><animate attributeName="r" values="3; 8; 3" dur="1s" repeatCount="indefinite" /><animate attributeName="opacity" values="1; 0; 1" dur="1s" repeatCount="indefinite" /></circle><text x="35" y="80" font-size="10" fill="#fbbf24">영양소 흡수</text></svg></div>`;
+            } else if (type === 'absorb-water') {
+                content += `<text x="10" y="20" class="sim-label">큰창자</text><path d="M 20,50 L 120,50" stroke="#a16207" stroke-width="20" stroke-linecap="round" /><circle cx="50" cy="50" r="5" fill="#3b82f6"><animate attributeName="cy" from="50" to="80" dur="2s" repeatCount="indefinite" /><animate attributeName="opacity" from="1" to="0" dur="2s" repeatCount="indefinite" /></circle></svg></div>`;
+            } else if (type === 'airflow') {
+                content += `<text x="10" y="20" class="sim-label">기관지</text><path d="M 70,20 L 70,60 L 40,90 M 70,60 L 100,90" stroke="#cbd5e1" stroke-width="8" /><circle cx="70" cy="20" r="3" fill="#3b82f6"><animateMotion path="M 0,0 L 0,40 L -30,70" dur="2s" repeatCount="indefinite" /></circle><circle cx="70" cy="20" r="3" fill="#3b82f6"><animateMotion path="M 0,0 L 0,40 L 30,70" dur="2s" repeatCount="indefinite" begin="1s" /></circle></svg></div>`;
+            } else if (type === 'flow-fast') {
+                content += `<text x="10" y="20" class="sim-label">동맥</text><rect x="20" y="40" width="100" height="20" fill="#fca5a5" stroke="#ef4444" stroke-width="3" /><circle cx="30" cy="50" r="4" fill="#ef4444"><animate attributeName="cx" from="30" to="110" dur="0.5s" repeatCount="indefinite" /></circle></svg></div>`;
+            } else if (type === 'flow-slow') {
+                content += `<text x="10" y="20" class="sim-label">정맥 (판막)</text><rect x="20" y="40" width="100" height="20" fill="#93c5fd" stroke="#3b82f6" stroke-width="2" /><path d="M 60,40 L 70,50 L 60,60" stroke="white" stroke-width="2" fill="none" /><circle cx="30" cy="50" r="4" fill="#1d4ed8"><animate attributeName="cx" from="30" to="110" dur="2s" repeatCount="indefinite" /></circle></svg></div>`;
+            } else if (type === 'beat') {
+                content += `<text x="10" y="20" class="sim-label">심장</text><path d="M 50,30 C 40,10 10,10 10,40 C 10,70 50,90 50,90 C 50,90 90,70 90,40 C 90,10 60,10 50,30" fill="#ef4444" style="animation: sim-beat 0.8s infinite;" /></svg></div>`;
+            } else if (type === 'breathe') {
+                content += `<text x="10" y="20" class="sim-label">폐</text><path d="M 30,20 C 10,20 10,70 30,90 C 30,90 50,70 50,20" fill="#fca5a5" style="animation: sim-breathe 2s infinite alternate; transform-origin: center;" /><path d="M 70,20 C 90,20 90,70 70,90 C 70,90 50,70 50,20" fill="#fca5a5" style="animation: sim-breathe 2s infinite alternate; transform-origin: center;" /></svg></div>`;
+            } else if (type === 'move-updown') {
+                content += `<text x="10" y="20" class="sim-label">가로막</text><path d="M 10,50 Q 50,20 90,50" fill="none" stroke="#d97706" stroke-width="5" stroke-linecap="round"><animate attributeName="d" values="M 10,50 Q 50,20 90,50; M 10,50 Q 50,80 90,50; M 10,50 Q 50,20 90,50" dur="2s" repeatCount="indefinite" /></path></svg></div>`;
+            } else if (type === 'transmit') {
+                content += `<text x="10" y="20" class="sim-label">감각</text><text x="80" y="20" class="sim-label">신경</text><text x="160" y="20" class="sim-label">뇌</text><circle cx="30" cy="75" r="10" fill="#fca5a5" /><path id="sim-brain" d="M 160,60 C 150,60 150,90 180,90 C 200,90 200,60 190,60" fill="#475569" /><line x1="40" y1="75" x2="160" y2="75" stroke="#cbd5e1" stroke-width="4" /><circle id="sim-nerve-signal" cx="40" cy="75" r="4" fill="#fbbf24" opacity="0" style="offset-path: path('M 40,75 L 160,75');" /></svg></div>`;
+                controls = `<button onclick="simAction('stimulate')" class="bg-blue-600 hover:bg-blue-500 text-white text-xs px-3 py-1 rounded m-2">자극 주기</button>`;
+            } else if (type === 'contract') {
+                content += `<text x="10" y="20" class="sim-label">뼈</text><text x="10" y="40" fill="#f87171" font-size="10" font-weight="bold">근육</text><line x1="50" y1="75" x2="100" y2="75" stroke="#cbd5e1" stroke-width="10" stroke-linecap="round"/><g id="sim-arm-group" style="transition: transform 0.5s; transform-origin: 100px 75px;"><line x1="100" y1="75" x2="160" y2="75" stroke="#cbd5e1" stroke-width="8" stroke-linecap="round"/><circle cx="165" cy="75" r="5" fill="#cbd5e1"/></g><path id="sim-biceps" d="M 60,70 Q 100,70 130,75" fill="none" stroke="#fca5a5" stroke-width="8" stroke-linecap="round" style="transition: all 0.5s;" /></svg></div>`;
+                controls = `<div class="flex gap-2 m-2"><button onclick="simAction('muscle-contract')" class="bg-red-600 hover:bg-red-500 text-white text-xs px-3 py-1 rounded">수축</button><button onclick="simAction('muscle-relax')" class="bg-blue-600 hover:bg-blue-500 text-white text-xs px-3 py-1 rounded">이완</button></div>`;
+            } else if (type === 'bone-support') {
+                content += `<text x="10" y="20" class="sim-label">뼈 (지지)</text><line x1="50" y1="20" x2="50" y2="120" stroke="#cbd5e1" stroke-width="15" stroke-linecap="round" /><line x1="20" y1="120" x2="80" y2="120" stroke="#cbd5e1" stroke-width="15" stroke-linecap="round" /></svg></div>`;
+            }
+
+            container.innerHTML = content + (controls ? `<div class="bg-slate-800 w-full flex justify-center border-t border-slate-700">${controls}</div>` : '');
+        }
+
+        // --- Game Functions ---
+        function renderTools() {
+            els.toolbox.innerHTML = currentCase.tools.map(tool => `
+                <button type="button" id="tool-${tool.id}" onclick="selectTool('${tool.id}')" class="tool-btn flex flex-col items-center justify-center bg-slate-700 border border-slate-600 rounded-xl w-20 h-20 active:scale-95 group relative">
+                    <div class="mb-1 text-slate-300 group-hover:text-blue-400 transition-colors">
+                        <i data-lucide="${TOOL_ICONS[tool.id] || 'circle'}" class="w-8 h-8"></i>
+                    </div>
+                    <span class="text-[10px] text-slate-400 font-bold group-hover:text-white text-center leading-tight">${tool.name}</span>
+                </button>
+            `).join('');
+            lucide.createIcons();
+        }
+        function selectTool(toolId) {
+            if (selectedTool) document.getElementById(`tool-${selectedTool}`).classList.remove('selected');
+            if (selectedTool === toolId) { selectedTool = null; document.body.style.cursor = 'default'; return; }
+            selectedTool = toolId; document.getElementById(`tool-${toolId}`).classList.add('selected'); document.body.style.cursor = 'crosshair';
+            const tool = currentCase.tools.find(t => t.id === toolId); showMessage(`🛠 도구 선택: ${tool.name} - ${tool.desc}`, "text-blue-300 font-bold");
+        }
+        function nextStep() {
+            if (currentStepIndex >= currentCase.steps.length) { finishGame(true); return; }
+            const step = currentCase.steps[currentStepIndex]; showMessage(`[단계 ${currentStepIndex + 1}/${currentCase.steps.length}] ${step.msg}`); els.currentObjective.innerText = step.hint;
+        }
+        function handleInteraction(targetId) {
+            const step = currentCase.steps[currentStepIndex];
+            let isCorrect = false;
+
+            // Alias mapping
+            let checkId = targetId;
+            if (step.target === 'stomach' && (targetId === 'stomach-inner' || targetId === 'food-lump')) checkId = 'stomach';
+
+            if (step.action === "click_organ") {
+                if (checkId === step.target && !selectedTool) isCorrect = true;
+                else if (selectedTool) { failAction("도구를 내려놓고 장기를 먼저 확인하세요."); return; }
+            } else if (step.action === "use_tool") {
+                if (checkId === step.target && selectedTool === step.tool) isCorrect = true;
+                else if (!selectedTool) { failAction("도구를 선택해야 합니다."); return; }
+                else if (selectedTool !== step.tool) { failAction("잘못된 도구입니다!"); return; }
+            }
+            if (isCorrect) successAction(targetId);
+            else if (targetId !== 'body-bg' && !targetId.includes('bg')) failAction("지금 치료해야 할 부위가 아닙니다.");
+        }
+        function successAction(targetId) {
+            const step = currentCase.steps[currentStepIndex]; updateVisuals(targetId);
+            const feedback = step.postMsg ? `✅ ${step.postMsg}` : "✅ 성공! 기능이 회복되었습니다.";
+            showMessage(feedback, "text-green-400"); currentStepIndex++;
+            if(selectedTool) { document.getElementById(`tool-${selectedTool}`).classList.remove('selected'); selectedTool = null; document.body.style.cursor = 'default'; }
+            nextStep();
+        }
+        function failAction(msg) {
+            mistakes++; patientHealth -= 15; showMessage(`⚠ 경고: ${msg}`, "text-red-400 font-bold"); updateStatus();
+            if (patientHealth <= 0) finishGame(false);
+        }
+        function finishGame(isSuccess) {
+            if (isSuccess) { els.successReason.innerText = currentCase.successMsg; setTimeout(() => els.happyEndingScreen.classList.remove('hidden'), 1000); }
+            else { setTimeout(() => els.badEndingScreen.classList.remove('hidden'), 500); }
+        }
+        function showMessage(text, className="text-slate-200") {
+            const p = document.createElement('p'); p.className = `mb-3 fade-in ${className}`; p.innerText = text;
+            els.dialogBox.appendChild(p); els.dialogBox.scrollTop = els.dialogBox.scrollHeight;
+        }
+        function updateStatus() {
+            els.bpmDisplay.innerText = patientHealth > 0 ? (80 - mistakes * 15) : 0;
+            if (patientHealth <= 0) { els.patientStatusText.innerText = "DEAD"; els.ecgLine.classList.add('flat'); }
+            else if (patientHealth < 50) { els.patientStatusText.innerText = "CRITICAL"; els.patientStatusText.className = "text-red-500 font-bold text-sm blink"; els.ecgLine.classList.add('danger'); }
+            else { els.patientStatusText.innerText = "STABLE"; els.patientStatusText.className = "text-green-500 font-bold text-sm"; els.ecgLine.classList.remove('danger', 'flat'); }
+        }
+        function renderSurgeryStage(caseId) {
+            const bodyPath = `<g id="body-bg" onclick="handleInteraction('body-bg')"><path d="M 150,20 Q 120,20 120,60 Q 120,80 135,90 L 135,100 L 90,110 L 80,250 L 100,250 Q 100,350 90,400 L 100,530 L 200,530 L 210,400 Q 200,350 200,250 L 220,250 L 210,110 L 165,100 L 165,90 Q 180,80 180,60 Q 180,20 150,20 Z" fill="#334155" stroke="#475569" stroke-width="2" class="organ" /></g>`;
+            let organs = '';
+            if (caseId !== 'digestive') organs += `<path d="M 155,250 C 175,240 190,260 180,290 C 160,300 150,280 155,250" fill="#b45309" opacity="0.2" />`;
+            if (caseId !== 'respiratory') organs += `<path d="M 160,130 C 160,110 190,110 200,130 C 215,160 215,220 200,240 C 170,250 160,230 160,130" fill="#7f1d1d" opacity="0.2" /><path d="M 140,130 C 140,110 110,110 100,130 C 85,160 85,220 100,240 C 130,250 140,230 140,130" fill="#7f1d1d" opacity="0.2" />`;
+            if (caseId !== 'sensory') organs += `<path d="M 130,35 C 120,35 120,70 150,70 C 180,70 180,35 170,35 Q 150,25 130,35" fill="#e2e8f0" opacity="0.2" />`;
+            
+            if (caseId === 'digestive') {
+                organs += `
+                    <circle id="head" onclick="handleInteraction('head')" cx="150" cy="70" r="20" fill="transparent" stroke="#fca5a5" stroke-dasharray="4" class="organ hit-area"/>
+                    <path d="M 150,90 L 150,240" stroke="transparent" stroke-width="40" onclick="handleInteraction('esophagus')" class="hit-area" />
+                    <path id="esophagus" onclick="handleInteraction('esophagus')" d="M 150,90 L 150,240" stroke="#fcd34d" stroke-width="12" class="organ" stroke-opacity="0.5"/>
+                    <path d="M 155,250 C 175,240 190,260 180,300 C 160,310 145,280 155,250" fill="transparent" stroke="transparent" stroke-width="40" onclick="handleInteraction('stomach')" class="hit-area" />
+                    <path id="stomach" onclick="handleInteraction('stomach')" d="M 155,250 C 175,240 190,260 180,300 C 160,310 145,280 155,250" fill="#fef3c7" stroke="#f59e0b" stroke-width="2" class="organ"/>
+                    <g id="food-lump" class="hidden organ" onclick="event.stopPropagation(); handleInteraction('food-lump')"><circle cx="165" cy="275" r="12" fill="#ef4444" /><circle cx="170" cy="285" r="8" fill="#ef4444" /></g>
+                    <circle id="stomach-inner" onclick="event.stopPropagation(); handleInteraction('stomach-inner')" cx="165" cy="280" r="20" fill="transparent" class="organ" />
+                    <path d="M 180,300 Q 150,330 160,360 Q 180,350 160,320" fill="transparent" stroke="transparent" stroke-width="40" onclick="handleInteraction('small-intestine')" class="hit-area" />
+                    <path id="small-intestine" onclick="handleInteraction('small-intestine')" d="M 180,300 Q 150,330 160,360 Q 180,350 160,320" fill="none" stroke="#d97706" stroke-width="12" class="organ"/>
+                    <path d="M 120,300 L 120,380 L 180,380 L 180,300" fill="transparent" stroke="transparent" stroke-width="40" onclick="handleInteraction('large-intestine')" class="hit-area" />
+                    <path id="large-intestine" onclick="handleInteraction('large-intestine')" d="M 120,300 L 120,380 L 180,380 L 180,300" fill="none" stroke="#a16207" stroke-width="12" class="organ"/>
+                `;
+            } else if (caseId === 'respiratory') {
+                organs += `
+                    <circle id="head" onclick="handleInteraction('head')" cx="150" cy="75" r="15" fill="transparent" stroke="#fca5a5" stroke-width="2" stroke-dasharray="4" class="organ hit-area"/>
+                    <path d="M 150,90 L 150,130 M 150,130 L 130,160 M 150,130 L 170,160" stroke="transparent" stroke-width="40" onclick="handleInteraction('bronchi')" class="hit-area" />
+                    <path id="bronchi" onclick="handleInteraction('bronchi')" d="M 150,90 L 150,130 M 150,130 L 130,160 M 150,130 L 170,160" stroke="#cbd5e1" stroke-width="8" class="organ"/>
+                    <g id="lungs" onclick="handleInteraction('lungs')" class="organ" style="transition: transform 1s"><path d="M 145,140 C 100,140 90,240 145,240 Z" fill="#fca5a5" stroke="#e11d48" opacity="0.9" /><path d="M 155,140 C 200,140 210,240 155,240 Z" fill="#fca5a5" stroke="#e11d48" opacity="0.9" /></g>
+                    <path id="diaphragm" onclick="handleInteraction('diaphragm')" d="M 90,240 Q 150,200 210,240" fill="none" stroke="#d97706" stroke-width="8" stroke-linecap="round" class="organ hit-area" />
+                `;
+            } else if (caseId === 'circulatory') {
+                organs += `
+                    <g id="heart" onclick="handleInteraction('heart')" class="organ hit-area" transform="translate(150, 180)"><path d="M 0,-15 C -20,-40 -50,-10 -5,35 C 40,-10 20,-40 0,-15" fill="#991b1b" stroke="#ef4444" stroke-width="2" transform="scale(1.5)" /></g>
+                    <path d="M 150,165 C 150,140 180,140 180,190" stroke="transparent" stroke-width="40" fill="none" onclick="handleInteraction('aorta')" class="hit-area" />
+                    <path id="aorta" onclick="handleInteraction('aorta')" d="M 150,165 C 150,140 180,140 180,190" stroke="#ef4444" stroke-width="6" stroke-dasharray="4,2" fill="none" class="organ" />
+                    <path d="M 120,165 C 120,190 150,300 120,350" stroke="transparent" stroke-width="40" fill="none" onclick="handleInteraction('veins')" class="hit-area" />
+                    <path id="veins" onclick="handleInteraction('veins')" d="M 120,165 C 120,190 150,300 120,350" stroke="#3b82f6" stroke-width="6" fill="none" class="organ" />
+                    <circle id="blood-flow" r="3" fill="#fff" class="hidden"><animateMotion dur="1s" repeatCount="indefinite" path="M 150,165 C 150,140 180,140 180,190" /></circle>
+                `;
+            } else if (caseId === 'sensory') {
+                organs += `
+                    <path id="brain" onclick="handleInteraction('brain')" d="M 130,35 C 120,35 120,70 150,70 C 180,70 180,35 170,35 Q 150,25 130,35" fill="#fce7f3" stroke="#db2777" class="organ hit-area"/>
+                    <g id="eye-left" onclick="handleInteraction('eye-left')" class="organ hit-area"><circle cx="135" cy="60" r="4" fill="#fff" stroke="#cbd5e1"/><circle cx="135" cy="60" r="1.5" fill="#000"/></g>
+                    <rect id="hand-area" onclick="handleInteraction('hand-area')" x="210" y="250" width="30" height="30" fill="transparent" stroke="#a855f7" stroke-dasharray="4" class="organ hit-area" />
+                `;
+            } else if (caseId === 'muscular') {
+                organs += `
+                    <rect id="arm-area" onclick="handleInteraction('arm-area')" x="200" y="120" width="50" height="100" fill="transparent" stroke="#a855f7" stroke-dasharray="4" class="organ hit-area" />
+                    <g id="arm-detail" class="hidden" transform="translate(180, 100) scale(0.9)">
+                        <path d="M 30,20 L 60,100" stroke="#94a3b8" stroke-width="15" stroke-linecap="round"/>
+                        <circle cx="60" cy="100" r="10" fill="#e2e8f0"/>
+                        <g onclick="handleInteraction('broken-bone')" class="organ hit-area" style="transform-origin: 60px 100px; transform: rotate(15deg);"><path d="M 60,100 L 80,180" stroke="transparent" stroke-width="40" /></g>
+                        <g id="broken-bone" onclick="handleInteraction('broken-bone')" class="organ" style="transform-origin: 60px 100px; transform: rotate(15deg);"><path d="M 60,100 L 80,180" stroke="#94a3b8" stroke-width="12" stroke-linecap="round"/></g>
+                        <path onclick="handleInteraction('biceps')" d="M 40,40 Q 20,80 50,120" fill="none" stroke="transparent" stroke-width="35" class="hit-area" />
+                        <path id="biceps" onclick="handleInteraction('biceps')" d="M 40,40 Q 20,80 50,120" fill="none" stroke="#fca5a5" stroke-width="12" stroke-linecap="round" stroke-dasharray="5,2" class="organ" />
+                    </g>
+                `;
+            }
+            els.surgeryStage.innerHTML = `<svg viewBox="0 0 300 550" class="h-full w-auto drop-shadow-2xl">${bodyPath}${organs}</svg>`;
+        }
+
+        function updateVisuals(targetId) {
+            const el = document.getElementById(targetId);
+            if (!el && targetId !== 'body-bg') return;
+            if (targetId === 'stomach') {
+                if (currentStepIndex === 4) {
+                    el.setAttribute('stroke', '#ef4444'); el.setAttribute('stroke-dasharray', '5,2');
+                    document.getElementById('food-lump').classList.remove('hidden');
+                } else if (currentStepIndex === 7 && selectedTool === 'suture') {
+                    el.setAttribute('stroke', '#fcd34d'); el.removeAttribute('stroke-dasharray');
+                }
+            } else if (targetId === 'food-lump') { el.classList.add('hidden'); }
+            else if (targetId === 'stomach-inner') { el.setAttribute('fill', 'rgba(134, 239, 172, 0.5)'); }
+            else if (targetId === 'small-intestine') { el.setAttribute('stroke', '#fcd34d'); }
+            else if (targetId === 'large-intestine') { el.setAttribute('stroke', '#854d0e'); }
+            else if (targetId === 'diaphragm') {
+                if (currentStepIndex === 4) el.setAttribute('stroke', '#fcd34d');
+                else if (currentStepIndex === 5) {
+                    el.setAttribute('d', "M 90,260 Q 150,280 210,260");
+                    document.getElementById('lungs').setAttribute('transform', 'scale(1.1) translate(-15, -5)');
+                }
+            } else if (targetId === 'head') {
+                if(currentCase.tools.find(t=>t.id==='oxygen') && selectedTool==='oxygen') {
+                    el.setAttribute('fill', 'rgba(125, 211, 252, 0.3)'); el.setAttribute('stroke', '#38bdf8');
+                }
+            } else if (targetId === 'heart') { if(selectedTool === 'defib') el.classList.add('pulse-target'); }
+            else if (targetId === 'aorta') { el.removeAttribute('stroke-dasharray'); document.getElementById('blood-flow').classList.remove('hidden'); }
+            else if (targetId === 'veins') { el.setAttribute('stroke', '#2563eb'); }
+            else if (targetId === 'body-bg') {
+                 const svg = document.querySelector('#surgery-stage svg');
+                 const scanLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                 scanLine.setAttribute("x1", "0"); scanLine.setAttribute("y1", "0"); scanLine.setAttribute("x2", "300"); scanLine.setAttribute("y2", "0");
+                 scanLine.setAttribute("stroke", "#38bdf8"); scanLine.setAttribute("stroke-width", "5"); scanLine.setAttribute("opacity", "0.8");
+                 const anim = document.createElementNS("http://www.w3.org/2000/svg", "animate");
+                 anim.setAttribute("attributeName", "y1"); anim.setAttribute("from", "0"); anim.setAttribute("to", "550"); anim.setAttribute("dur", "1.5s"); anim.setAttribute("fill", "freeze");
+                 const anim2 = document.createElementNS("http://www.w3.org/2000/svg", "animate");
+                 anim2.setAttribute("attributeName", "y2"); anim2.setAttribute("from", "0"); anim2.setAttribute("to", "550"); anim2.setAttribute("dur", "1.5s"); anim2.setAttribute("fill", "freeze");
+                 scanLine.appendChild(anim); scanLine.appendChild(anim2); svg.appendChild(scanLine);
+            } else if (targetId === 'eye-left') { el.querySelector('circle:last-child').setAttribute('fill', '#000'); }
+            else if (targetId === 'brain') { el.setAttribute('fill', '#f472b6'); }
+            else if (targetId === 'hand-area') { el.setAttribute('fill', '#fca5a5'); }
+            else if (targetId === 'broken-bone') {
+                if (currentStepIndex === 1) el.setAttribute('d', "M 60,100 L 60,180");
+                else if (currentStepIndex === 2) el.setAttribute('stroke', '#94a3b8');
+            } else if (targetId === 'biceps') {
+                if (currentStepIndex === 3) el.removeAttribute('stroke-dasharray');
+                else if (currentStepIndex === 4) el.setAttribute('stroke', '#f87171');
+            } else if (targetId === 'arm-area') {
+                el.classList.add('hidden'); document.getElementById('arm-detail').classList.remove('hidden');
+            }
+        }
     </script>
 </body>
 </html>
