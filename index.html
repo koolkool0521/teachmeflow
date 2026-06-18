@@ -1,773 +1,517 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>초등 6학년 과학 - 닥터 사이언스의 수술실</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Do+Hyeon&family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Noto Sans KR', sans-serif; background-color: #0f172a; color: white; }
-        .font-display { font-family: 'Do Hyeon', sans-serif; }
-        .font-title { font-family: 'Black Han Sans', sans-serif; }
-        
-        /* 심박수 모니터 애니메이션 */
-        .heart-rate-line {
-            fill: none;
-            stroke: #22c55e;
-            stroke-width: 2;
-            stroke-dasharray: 1000;
-            stroke-dashoffset: 1000;
-            animation: dash 2s linear infinite;
-        }
-        .heart-rate-line.danger { stroke: #ef4444; animation-duration: 0.5s; }
-        .heart-rate-line.flat { stroke: #ef4444; stroke-dasharray: 0; animation: none; }
-        
-        @keyframes dash {
-            to { stroke-dashoffset: 0; }
-        }
-
-        /* 수술 도구 스타일 */
-        .tool-btn {
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .tool-btn:hover { 
-            transform: translateY(-4px); 
-            background-color: #334155;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-        }
-        .tool-btn.selected { 
-            border-color: #3b82f6; 
-            background-color: #1e3a8a; 
-            box-shadow: 0 0 0 2px #3b82f6;
-            transform: translateY(-2px);
-        }
-
-        /* 장기(Organs) 스타일 */
-        .organ { 
-            transition: all 0.3s ease; 
-            cursor: pointer; 
-            pointer-events: all;
-            filter: drop-shadow(0 0 2px rgba(0,0,0,0.5));
-        }
-        .organ:hover { 
-            filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.8)); 
-            stroke: #fff;
-            stroke-width: 3px;
-        }
-        
-        /* 클릭 영역 확장용 투명 클래스 */
-        .hit-area {
-            fill: transparent;
-            stroke: transparent;
-            stroke-width: 40px; /* 클릭 범위 대폭 확대 */
-            cursor: pointer;
-            pointer-events: all;
-        }
-        
-        .fade-in { animation: fadeIn 0.5s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-        /* 모달 스타일 */
-        .modal-bg { background-color: rgba(0, 0, 0, 0.8); backdrop-filter: blur(4px); }
-        
-        /* 펄스 (클릭 유도) */
-        .pulse-target { animation: target-pulse 1.5s infinite; }
-        @keyframes target-pulse {
-            0% { filter: drop-shadow(0 0 0 rgba(239, 68, 68, 0.7)); }
-            50% { filter: drop-shadow(0 0 15px rgba(239, 68, 68, 0)); }
-            100% { filter: drop-shadow(0 0 0 rgba(239, 68, 68, 0.7)); }
-        }
-
-        /* 수술대 조명 효과 */
-        .spotlight {
-            background: radial-gradient(circle at center, rgba(59, 130, 246, 0.1) 0%, rgba(15, 23, 42, 0) 70%);
-        }
-        
-        /* 스크롤바 커스텀 */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #1e293b; }
-        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
-
-        /* 미니 시뮬레이터 애니메이션 */
-        @keyframes sim-beat { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.15); } }
-        @keyframes sim-chew { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(10px); } }
-        @keyframes sim-breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
-        @keyframes sim-move-down { 0% { transform: translateY(0); } 50% { transform: translateY(20px); } 100% { transform: translateY(0); } }
-        @keyframes sim-contract { 0%, 100% { stroke-width: 10; } 50% { stroke-width: 18; } }
-        @keyframes sim-signal { 0% { offset-distance: 0%; opacity: 1; } 100% { offset-distance: 100%; opacity: 0; } }
-        @keyframes flow { 0% { stroke-dashoffset: 20; } 100% { stroke-dashoffset: 0; } }
-        @keyframes drip { 0% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(20px); opacity: 0; } }
-        
-        .sim-label { font-size: 10px; font-weight: bold; fill: #94a3b8; }
-        .sim-label-active { fill: #facc15; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>현장 전기공사 체크리스트</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      -webkit-tap-highlight-color: transparent;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+  </style>
 </head>
-<body class="h-screen flex flex-col overflow-hidden select-none text-slate-100">
+<body class="bg-slate-50 text-slate-800 pb-20">
 
-    <!-- 상단: 상태바 -->
-    <header class="bg-slate-900 border-b border-slate-700 p-3 flex justify-between items-center h-16 shrink-0 z-20">
-        <div class="flex items-center gap-4">
-            <div class="flex items-center gap-2 cursor-pointer" onclick="resetGame()">
-                <div class="bg-blue-600 p-1.5 rounded text-white font-bold">Dr.</div>
-                <h1 class="text-xl font-display text-blue-400">사이언스</h1>
-            </div>
-            <div class="hidden md:flex items-center gap-3">
-                <span class="bg-slate-800 rounded-full px-4 py-1 text-sm text-slate-400 border border-slate-700" id="case-name">수술 대기실</span>
-                <button onclick="toggleReferenceBook()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1 transition shadow-lg border border-indigo-500">
-                    <i data-lucide="book-open" class="w-3 h-3"></i> 의학 도감
-                </button>
-            </div>
+  <!-- Header -->
+  <header class="sticky top-0 bg-white/95 backdrop-blur border-b border-slate-200 z-30 px-4 py-3.5 shadow-sm">
+    <div class="max-w-md mx-auto flex items-center justify-between">
+      <div>
+        <span class="text-xs font-semibold text-blue-600 tracking-wider uppercase">현장 관리 모바일 웹</span>
+        <h1 class="text-lg font-bold text-slate-900 mt-0.5">전기공사 체크리스트</h1>
+      </div>
+      <button onclick="resetAll()" class="p-2 text-xs font-medium text-slate-500 hover:text-red-600 active:bg-slate-100 rounded-lg transition-colors flex items-center gap-1">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 8H17" />
+        </svg>
+        초기화
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="max-w-md mx-auto px-4 mt-4 space-y-5">
+
+    <!-- Progress Dashboard Card -->
+    <div class="bg-gradient-to-br from-slate-900 to-slate-800 text-white p-5 rounded-2xl shadow-md relative overflow-hidden">
+      <div class="absolute right-0 bottom-0 opacity-10 translate-x-4 translate-y-4">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-32 w-32" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 10V3L4 14h7v7l9-11h-7z" />
+        </svg>
+      </div>
+      
+      <div class="relative z-10">
+        <div class="flex justify-between items-baseline">
+          <span class="text-sm font-medium text-slate-300">전체 공정 진행률</span>
+          <span id="progress-percent" class="text-3xl font-extrabold tracking-tight">0%</span>
         </div>
-
-        <!-- 바이탈 모니터 -->
-        <div class="flex items-center gap-4 flex-1 justify-end max-w-lg">
-            <div class="flex flex-col items-end mr-2">
-                <span class="text-[10px] text-slate-500 tracking-wider">PATIENT STATUS</span>
-                <span id="patient-status-text" class="text-green-500 font-bold text-sm">STABLE</span>
-            </div>
-            <div class="bg-black border border-slate-700 w-48 h-10 rounded relative overflow-hidden flex items-center shadow-inner">
-                <div class="absolute inset-0 bg-[linear-gradient(90deg,transparent_0%,rgba(34,197,94,0.1)_50%,transparent_100%)] animate-pulse"></div>
-                <svg viewBox="0 0 200 40" class="w-full h-full relative z-10">
-                    <path id="ecg-line" d="M0,20 L20,20 L30,10 L40,30 L50,10 L60,30 L70,20 L200,20" class="heart-rate-line" />
-                </svg>
-            </div>
-            <div class="text-center w-12">
-                <div class="text-[10px] text-slate-500">BPM</div>
-                <div id="bpm-display" class="text-2xl font-mono text-green-500">80</div>
-            </div>
-        </div>
-    </header>
-
-    <!-- 메인 게임 영역 -->
-    <div class="flex flex-1 overflow-hidden">
         
-        <!-- 왼쪽: 간호사/메시지 패널 -->
-        <aside class="w-80 bg-slate-800 border-r border-slate-700 flex flex-col p-4 shadow-xl z-10 relative">
-            <div class="flex items-center gap-3 mb-4 border-b border-slate-700 pb-4">
-                <div class="w-12 h-12 bg-indigo-500 rounded-full flex items-center justify-center overflow-hidden border-2 border-slate-600 shadow-lg shrink-0">
-                    <i data-lucide="user" class="text-white w-8 h-8"></i>
-                </div>
-                <div>
-                    <div class="text-xs text-indigo-300 font-bold uppercase tracking-wider">Head Nurse</div>
-                    <div class="text-lg font-display text-white">나이팅게일</div>
-                </div>
-            </div>
-            
-            <!-- 대화창 -->
-            <div id="dialog-box" class="flex-1 bg-slate-900/50 rounded-lg p-4 mb-4 overflow-y-auto font-light text-slate-200 text-sm leading-relaxed border border-slate-700 shadow-inner">
-                <p class="mb-2 text-yellow-300">"박사님, 환자들이 대기 중입니다. 집도할 케이스를 선택해 주세요."</p>
-            </div>
-
-            <!-- 힌트/목표 -->
-            <div class="bg-blue-900/20 border border-blue-500/30 p-4 rounded-lg shrink-0">
-                <h3 class="text-blue-400 text-xs font-bold mb-2 flex items-center gap-1 uppercase tracking-wider">
-                    <i data-lucide="crosshair" class="w-3 h-3"></i> Current Objective
-                </h3>
-                <p id="current-objective" class="text-sm text-blue-100 font-bold leading-snug">환자 케이스 선택하기</p>
-            </div>
-        </aside>
-
-        <!-- 중앙: 수술대 (시각화 영역) -->
-        <main class="flex-1 bg-slate-950 relative flex flex-col">
-            
-            <!-- 조명 효과 -->
-            <div class="absolute inset-0 spotlight pointer-events-none"></div>
-
-            <!-- 수술 화면 (SVG) -->
-            <div id="surgery-stage" class="flex-1 flex items-center justify-center relative z-0 p-4 overflow-hidden">
-                <!-- 여기에 게임 콘텐츠(SVG)가 렌더링됨 -->
-            </div>
-
-            <!-- 하단: 도구 모음 (Toolbox) -->
-            <div id="toolbox" class="h-28 bg-slate-800 border-t border-slate-700 p-3 flex justify-center items-center gap-4 shrink-0 z-10 hidden shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.3)]">
-                <!-- 도구 버튼들이 JS로 생성됨 -->
-            </div>
-        </main>
-    </div>
-
-    <!-- 오버레이: 의학 도감 -->
-    <div id="reference-book" class="hidden absolute inset-0 modal-bg z-50 flex items-center justify-center p-4">
-        <div class="bg-slate-800 w-full max-w-5xl h-[85vh] rounded-2xl shadow-2xl border border-slate-600 flex flex-col overflow-hidden relative">
-            <div class="p-4 border-b border-slate-700 flex justify-between items-center bg-slate-900">
-                <h2 class="text-xl font-bold text-blue-400 flex items-center gap-2">
-                    <i data-lucide="book" class="w-6 h-6"></i> 우리 몸 의학 도감 & 시뮬레이터
-                </h2>
-                <button onclick="toggleReferenceBook()" class="text-slate-400 hover:text-white transition">
-                    <i data-lucide="x" class="w-6 h-6"></i>
-                </button>
-            </div>
-            <div class="flex flex-1 overflow-hidden">
-                <!-- 사이드바 -->
-                <div class="w-48 bg-slate-800 border-r border-slate-700 p-2 overflow-y-auto">
-                    <button onclick="showRefCategory('digestive')" class="w-full text-left p-3 rounded hover:bg-slate-700 text-sm font-bold text-slate-300 transition">소화 기관</button>
-                    <button onclick="showRefCategory('respiratory')" class="w-full text-left p-3 rounded hover:bg-slate-700 text-sm font-bold text-slate-300 transition">호흡 기관</button>
-                    <button onclick="showRefCategory('circulatory')" class="w-full text-left p-3 rounded hover:bg-slate-700 text-sm font-bold text-slate-300 transition">순환 기관</button>
-                    <button onclick="showRefCategory('sensory')" class="w-full text-left p-3 rounded hover:bg-slate-700 text-sm font-bold text-slate-300 transition">감각/신경계</button>
-                    <button onclick="showRefCategory('muscular')" class="w-full text-left p-3 rounded hover:bg-slate-700 text-sm font-bold text-slate-300 transition">운동 기관</button>
-                </div>
-                <!-- 내용 -->
-                <div id="ref-content" class="flex-1 p-6 overflow-y-auto bg-slate-900/50 scrollbar-hide">
-                    <p class="text-slate-400 text-center mt-20">좌측 메뉴에서 궁금한 기관을 선택하세요.</p>
-                </div>
-            </div>
+        <!-- Progress Bar -->
+        <div class="w-full bg-slate-700 h-2.5 rounded-full mt-3 overflow-hidden">
+          <div id="progress-bar" class="bg-blue-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
         </div>
-    </div>
-
-    <!-- Case Select Screen -->
-    <div id="case-select-screen" class="absolute inset-0 bg-slate-900/95 z-40 flex items-center justify-center backdrop-blur-md">
-        <div class="max-w-6xl w-full p-8 h-full overflow-y-auto">
-            <div class="text-center mb-10 pt-10">
-                <div class="inline-block bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-full mb-3">MEDICAL SIMULATION</div>
-                <h2 class="text-5xl font-title text-white mb-2"><span class="text-blue-500">닥터 사이언스</span>의 수술실</h2>
-                <p class="text-slate-400">오늘 집도할 환자를 선택해 주세요. 정확한 의학 지식이 필요합니다.</p>
-                <button onclick="toggleReferenceBook()" class="mt-4 text-indigo-400 hover:text-indigo-300 underline text-sm">
-                    수술 전 의학 도감 확인하기
-                </button>
-            </div>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 pb-10">
-                <button onclick="startGame('digestive')" class="group bg-slate-800 border border-slate-700 hover:border-yellow-500 hover:bg-slate-750 p-5 rounded-2xl transition-all duration-300 text-left hover:-translate-y-1 shadow-lg">
-                    <div class="flex justify-between items-start mb-3">
-                        <div class="bg-yellow-500/10 p-2 rounded-xl text-yellow-500 group-hover:bg-yellow-500 group-hover:text-white transition-colors">
-                            <i data-lucide="utensils" class="w-6 h-6"></i>
-                        </div>
-                        <span class="text-[10px] font-bold bg-slate-900 px-2 py-1 rounded text-slate-500 uppercase">소화기관</span>
-                    </div>
-                    <h3 class="text-lg font-bold text-white mb-1 group-hover:text-yellow-400 transition-colors">폭식 환자 김먹보</h3>
-                    <p class="text-xs text-slate-400 leading-relaxed">"배가 너무 아파요..." <br>소화 불량 및 위장 장애</p>
-                </button>
-                <button onclick="startGame('respiratory')" class="group bg-slate-800 border border-slate-700 hover:border-sky-500 hover:bg-slate-750 p-5 rounded-2xl transition-all duration-300 text-left hover:-translate-y-1 shadow-lg">
-                    <div class="flex justify-between items-start mb-3">
-                        <div class="bg-sky-500/10 p-2 rounded-xl text-sky-500 group-hover:bg-sky-500 group-hover:text-white transition-colors">
-                            <i data-lucide="wind" class="w-6 h-6"></i>
-                        </div>
-                        <span class="text-[10px] font-bold bg-slate-900 px-2 py-1 rounded text-slate-500 uppercase">호흡기관</span>
-                    </div>
-                    <h3 class="text-lg font-bold text-white mb-1 group-hover:text-sky-400 transition-colors">숨찬 다이버 박해녀</h3>
-                    <p class="text-xs text-slate-400 leading-relaxed">"숨이 안 쉬어져요..." <br>가로막 경련 및 호흡 곤란</p>
-                </button>
-                <button onclick="startGame('circulatory')" class="group bg-slate-800 border border-slate-700 hover:border-red-500 hover:bg-slate-750 p-5 rounded-2xl transition-all duration-300 text-left hover:-translate-y-1 shadow-lg">
-                    <div class="flex justify-between items-start mb-3">
-                        <div class="bg-red-500/10 p-2 rounded-xl text-red-500 group-hover:bg-red-500 group-hover:text-white transition-colors">
-                            <i data-lucide="heart-pulse" class="w-6 h-6"></i>
-                        </div>
-                        <span class="text-[10px] font-bold bg-slate-900 px-2 py-1 rounded text-slate-500 uppercase">순환기관</span>
-                    </div>
-                    <h3 class="text-lg font-bold text-white mb-1 group-hover:text-red-400 transition-colors">심장 멈춘 이회장</h3>
-                    <p class="text-xs text-slate-400 leading-relaxed">"가슴이 꽉 막혀!" <br>심장 펌프 기능 정지</p>
-                </button>
-                <button onclick="startGame('sensory')" class="group bg-slate-800 border border-slate-700 hover:border-pink-500 hover:bg-slate-750 p-5 rounded-2xl transition-all duration-300 text-left hover:-translate-y-1 shadow-lg">
-                    <div class="flex justify-between items-start mb-3">
-                        <div class="bg-pink-500/10 p-2 rounded-xl text-pink-500 group-hover:bg-pink-500 group-hover:text-white transition-colors">
-                            <i data-lucide="eye" class="w-6 h-6"></i>
-                        </div>
-                        <span class="text-[10px] font-bold bg-slate-900 px-2 py-1 rounded text-slate-500 uppercase">감각기관</span>
-                    </div>
-                    <h3 class="text-lg font-bold text-white mb-1 group-hover:text-pink-400 transition-colors">어지러운 나공부</h3>
-                    <p class="text-xs text-slate-400 leading-relaxed">"어지러워요..." <br>신경 전달 장애</p>
-                </button>
-                <button onclick="startGame('muscular')" class="group bg-slate-800 border border-slate-700 hover:border-purple-500 hover:bg-slate-750 p-5 rounded-2xl transition-all duration-300 text-left hover:-translate-y-1 shadow-lg">
-                    <div class="flex justify-between items-start mb-3">
-                        <div class="bg-purple-500/10 p-2 rounded-xl text-purple-500 group-hover:bg-purple-500 group-hover:text-white transition-colors">
-                            <i data-lucide="dumbbell" class="w-6 h-6"></i>
-                        </div>
-                        <span class="text-[10px] font-bold bg-slate-900 px-2 py-1 rounded text-slate-500 uppercase">운동기관</span>
-                    </div>
-                    <h3 class="text-lg font-bold text-white mb-1 group-hover:text-purple-400 transition-colors">팔 부러진 최선수</h3>
-                    <p class="text-xs text-slate-400 leading-relaxed">"팔이 안 움직여요!" <br>골절 및 근육 파열</p>
-                </button>
-            </div>
+        
+        <div class="flex justify-between items-center mt-4 pt-4 border-t border-slate-700/50 text-xs text-slate-300">
+          <div>완료 항목: <span id="completed-count" class="font-bold text-white">0</span> / <span id="total-count" class="font-bold text-white">0</span>개</div>
+          <button onclick="shareStatus()" class="bg-blue-600 hover:bg-blue-500 text-white font-semibold px-3 py-1.5 rounded-lg active:scale-95 transition-transform flex items-center gap-1">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+            </svg>
+            현황 복사
+          </button>
         </div>
+      </div>
     </div>
 
-    <!-- 결과 화면들 -->
-    <div id="bad-ending-screen" class="hidden absolute inset-0 bg-black/95 z-50 flex items-center justify-center p-4">
-        <div class="newspaper max-w-2xl w-full p-8 shadow-2xl relative animate-[fadeIn_0.5s_ease-out]">
-            <div class="border-b-4 border-black mb-6 pb-2 flex justify-between items-end">
-                <h2 class="text-5xl font-title text-red-700 tracking-tighter">뉴스 특보</h2>
-            </div>
-            <div class="flex gap-8">
-                <div class="flex-1">
-                    <h3 class="text-3xl font-display font-bold mb-6 leading-tight text-slate-900">"닥터 사이언스,<br>충격의 의료 과실"</h3>
-                    <p class="text-justify font-serif text-lg leading-relaxed mb-4 text-slate-800">
-                        수술 과정을 지켜보던 가족들은 <span class="font-bold bg-yellow-200 px-1">"기본적인 의학 지식이 부족하다"</span>며 분통을 터뜨렸다.
-                    </p>
-                </div>
-                <div class="w-48 flex flex-col gap-2">
-                    <div class="w-full h-48 bg-slate-200 flex items-center justify-center border-2 border-black overflow-hidden relative">
-                         <i data-lucide="frown" class="w-20 h-20 text-slate-600 relative z-10"></i>
-                    </div>
-                </div>
-            </div>
-            <button onclick="resetGame()" class="absolute -bottom-16 left-1/2 -translate-x-1/2 bg-red-600 hover:bg-red-700 text-white px-8 py-3 rounded-full font-bold shadow-lg transition text-lg flex items-center gap-2 hover:scale-105">
-                <i data-lucide="rotate-ccw" class="w-5 h-5"></i> 재도전
-            </button>
-        </div>
+    <!-- Quick Category Filter Tab/Chips (Horizontal Scroll) -->
+    <div class="space-y-2">
+      <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block">공간별 바로가기</span>
+      <div class="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-none" id="category-chips">
+        <!-- Generated Dynamically -->
+      </div>
     </div>
 
-    <div id="happy-ending-screen" class="hidden absolute inset-0 bg-green-900/90 z-50 flex items-center justify-center p-4">
-        <div class="bg-white max-w-xl w-full p-10 rounded-sm shadow-2xl transform rotate-1 relative paper-texture text-slate-800 animate-[fadeIn_0.5s_ease-out]">
-            <div class="absolute -top-4 -right-4 bg-red-600 text-white w-20 h-20 rounded-full flex items-center justify-center font-bold shadow-lg rotate-12 border-4 border-white opacity-90 text-center leading-tight">수술<br>성공</div>
-            <h2 class="text-3xl font-serif font-bold mb-8 text-center border-b-2 border-slate-100 pb-4 text-slate-700">감사의 편지</h2>
-            <div class="font-serif text-lg leading-relaxed mb-10 space-y-4 text-slate-600 px-4">
-                <p>선생님의 완벽한 수술 덕분에 제 몸이 다시 건강해졌습니다!</p>
-                <div class="bg-green-50 p-4 rounded-lg border-l-4 border-green-500 my-4">
-                    <p class="text-green-800 font-bold mb-1">💡 처방:</p>
-                    <p id="success-reason" class="text-green-700 text-base">--성공 요인--</p>
-                </div>
-            </div>
-            <div class="text-center">
-                <button onclick="resetGame()" class="bg-blue-600 hover:bg-blue-700 text-white px-10 py-4 rounded-full font-bold shadow-xl transition text-lg flex items-center gap-2 mx-auto hover:scale-105">
-                    다음 환자 받기 <i data-lucide="arrow-right" class="w-5 h-5"></i>
-                </button>
-            </div>
-        </div>
+    <!-- Filter Toggle (All, Pending, Completed) -->
+    <div class="flex bg-slate-200/60 p-1 rounded-xl text-xs font-semibold">
+      <button onclick="setFilter('all')" id="btn-filter-all" class="flex-1 py-2 text-center rounded-lg transition-all text-slate-700 bg-white shadow-sm">전체보기</button>
+      <button onclick="setFilter('pending')" id="btn-filter-pending" class="flex-1 py-2 text-center rounded-lg transition-all text-slate-500 hover:text-slate-800">진행중</button>
+      <button onclick="setFilter('completed')" id="btn-filter-completed" class="flex-1 py-2 text-center rounded-lg transition-all text-slate-500 hover:text-slate-800">완료됨</button>
     </div>
 
-    <script>
-        const TOOL_ICONS = {
-            'stethoscope': 'stethoscope', 'scanner': 'scan', 'microscope': 'microscope', 
-            'scalpel': 'knife', 'forceps': 'scissors', 'enzyme': 'flask-conical', 'suture': 'syringe',
-            'oxygen': 'wind', 'relaxant': 'droplet', 'hand': 'hand', 'nutrient': 'pill',
-            'defib': 'zap', 'connector': 'link', 'light': 'lightbulb', 'drops': 'droplets', 'drill': 'hammer'
-        };
+    <!-- Checklist Sections -->
+    <div id="checklist-container" class="space-y-6">
+      <!-- Generated Dynamically -->
+    </div>
 
-        const organReference = {
-            // ... (Previous data)
-            digestive: [
-                { id: 'mouth', name: "입 (Mouth)", role: "이로 음식물을 잘게 부수고(저작), 침과 섞어 부드럽게 만듭니다.", sim: "chew" },
-                { id: 'esophagus', name: "식도 (Esophagus)", role: "음식물이 위로 이동하는 통로입니다. 근육의 꿈틀 운동으로 음식물을 내려보냅니다.", sim: "move-down" },
-                { id: 'stomach', name: "위 (Stomach)", role: "주머니 모양의 근육질 장기입니다. 위액을 섞어 음식물을 죽처럼 분해(소화)합니다.", sim: "churn" },
-                { id: 'small_intestine', name: "작은창자 (Small Intestine)", role: "소화 기관 중 가장 깁니다. 음식물의 영양소를 흡수합니다.", sim: "absorb" },
-                { id: 'large_intestine', name: "큰창자 (Large Intestine)", role: "소화되고 남은 찌꺼기에서 물을 흡수하고 대변을 만듭니다.", sim: "absorb-water" },
-                { id: 'liver', name: "간 (Liver)", role: "쓸개즙을 만들어 지방 소화를 돕고, 해독 작용을 합니다.", sim: "bile-secretion" },
-                { id: 'gallbladder', name: "쓸개 (Gallbladder)", role: "간에서 만든 쓸개즙을 저장했다가 분비하여 지방 소화를 돕습니다.", sim: "bile-secretion" },
-                { id: 'pancreas', name: "이자 (Pancreas)", role: "이자액(소화 효소)을 만들어 소장으로 분비하여 탄수화물, 단백질, 지방을 모두 소화시킵니다.", sim: "pancreas-juice" }
-            ],
-            respiratory: [
-                { id: 'trachea', name: "기관/기관지", role: "공기가 폐로 이동하는 통로입니다.", sim: "airflow" },
-                { id: 'lungs', name: "폐 (Lung)", role: "몸속의 이산화탄소를 내보내고 산소를 받아들이는 가스 교환이 일어납니다.", sim: "breathe" },
-                { id: 'diaphragm', name: "가로막", role: "폐 아래에 있는 근육판입니다. 호흡 운동을 돕습니다.", sim: "move-updown" }
-            ],
-            circulatory: [
-                { id: 'heart', name: "심장 (Heart)", role: "펌프 작용을 하여 혈액을 온몸으로 순환시킵니다.", sim: "beat" },
-                { id: 'artery', name: "동맥 (Artery)", role: "심장에서 나가는 혈액이 흐르는 혈관입니다. 벽이 두껍고 탄력이 있습니다.", sim: "flow-fast" },
-                { id: 'vein', name: "정맥 (Vein)", role: "온몸을 돌고 심장으로 돌아오는 혈액이 흐르는 혈관입니다.", sim: "flow-slow" }
-            ],
-            sensory: [
-                { id: 'nerve', name: "신경계 (Nervous System)", role: "감각 기관에서 받은 자극을 뇌로 전달하고, 뇌의 명령을 운동 기관으로 전달합니다.", sim: "transmit" },
-                { id: 'brain', name: "뇌 (Brain)", role: "자극을 해석하고 판단하여 적절한 반응을 명령합니다.", sim: "think" }
-            ],
-            muscular: [
-                { id: 'bone', name: "뼈 (Bone)", role: "몸의 형태를 유지하고 내부 기관을 보호합니다. 근육과 연결되어 몸을 지탱합니다.", sim: "bone-support" },
-                { id: 'muscle', name: "근육 (Muscle)", role: "길이가 줄어들거나(수축) 늘어나면서(이완) 뼈를 당겨 몸을 움직이게 합니다.", sim: "contract" }
-            ]
-        };
+  </main>
 
-        const cases = {
-            digestive: {
-                name: "폭식 환자 김먹보",
-                symptoms: "전체 소화 불량",
-                dialogues: ["입부터 대장까지 모든 소화 과정에 문제가 생긴 것 같습니다."],
-                tools: [{id:'stethoscope',name:'청진기',desc:'확인'},{id:'scalpel',name:'메스',desc:'절개'},{id:'forceps',name:'겸자',desc:'제거'},{id:'enzyme',name:'소화효소',desc:'분해'},{id:'nutrient',name:'영양제',desc:'흡수'},{id:'suture',name:'봉합사',desc:'봉합'}],
-                steps: [
-                    {msg:"'청진기'로 복부를 진찰하세요.",action:"use_tool",tool:"stethoscope",target:"stomach",hint:"위장 소리 확인.",postMsg:"장 운동 정지 확인."},
-                    {msg:"'입'을 검사하세요.",action:"click_organ",target:"head",hint:"저작 운동 확인.",postMsg:"치아 상태 양호."},
-                    {msg:"'겸자'로 식도를 뚫어주세요.",action:"use_tool",tool:"forceps",target:"esophagus",hint:"목 부분.",postMsg:"식도 확보."},
-                    {msg:"'위'를 클릭하세요.",action:"click_organ",target:"stomach",hint:"왼쪽 갈비뼈 아래.",postMsg:"위 팽창 확인."},
-                    {msg:"'메스'로 위를 절개하세요.",action:"use_tool",tool:"scalpel",target:"stomach",hint:"내부 확인.",postMsg:"절개 완료."},
-                    {msg:"'겸자'로 음식물 덩어리를 제거하세요.",action:"use_tool",tool:"forceps",target:"food-lump",hint:"이물질 제거.",postMsg:"이물질 제거됨."},
-                    {msg:"'소화효소'를 뿌려주세요.",action:"use_tool",tool:"enzyme",target:"stomach-inner",hint:"분해 시작 (위 전체 클릭 가능).",postMsg:"음식물 분해 중."},
-                    {msg:"'영양제'를 소장에 투여하세요.",action:"use_tool",tool:"nutrient",target:"small-intestine",hint:"흡수 기능.",postMsg:"영양소 흡수 재개."},
-                    {msg:"대장을 마사지하세요.",action:"click_organ",target:"large-intestine",hint:"수분 흡수.",postMsg:"소화 과정 정상화."}
-                ],
-                successMsg: "소화와 흡수 과정을 정상화했습니다."
-            },
-            respiratory: {
-                name: "숨찬 다이버 박해녀",
-                symptoms: "심각한 호흡 곤란",
-                dialogues: ["호흡 곤란 환자입니다."],
-                tools: [{id:'oxygen',name:'산소 마스크',desc:'산소'},{id:'forceps',name:'겸자',desc:'이물질'},{id:'relaxant',name:'이완제',desc:'근육'},{id:'hand',name:'손',desc:'마사지'}],
-                steps: [
-                    {msg:"'겸자'로 기도를 확보하세요.",action:"use_tool",tool:"forceps",target:"head",hint:"입 안.",postMsg:"기도 확보."},
-                    {msg:"'기관지'를 확인하세요.",action:"click_organ",target:"bronchi",hint:"폐로 가는 길.",postMsg:"통로 정상."},
-                    {msg:"'산소 마스크'를 씌우세요.",action:"use_tool",tool:"oxygen",target:"head",hint:"산소 공급.",postMsg:"산소 공급 중."},
-                    {msg:"'가로막'을 찾으세요.",action:"click_organ",target:"diaphragm",hint:"폐 아래.",postMsg:"경직 확인."},
-                    {msg:"'이완제'를 주사하세요.",action:"use_tool",tool:"relaxant",target:"diaphragm",hint:"근육 이완.",postMsg:"가로막 이완됨."},
-                    {msg:"'손'으로 가로막을 당기세요.",action:"use_tool",tool:"hand",target:"diaphragm",hint:"호흡 유도.",postMsg:"자가 호흡 회복!"}
-                ],
-                successMsg: "기도 확보 및 호흡 운동 정상화."
-            },
-            circulatory: {
-                name: "심장 멈춘 이회장",
-                symptoms: "심정지",
-                dialogues: ["심정지 환자입니다."],
-                tools: [{id:'stethoscope',name:'청진기',desc:'진찰'},{id:'defib',name:'제세동기',desc:'충격'},{id:'connector',name:'혈관 튜브',desc:'연결'},{id:'scanner',name:'스캐너',desc:'확인'}],
-                steps: [
-                    {msg:"'청진기'로 심장을 확인하세요.",action:"use_tool",tool:"stethoscope",target:"heart",hint:"가슴 중앙.",postMsg:"심박 정지."},
-                    {msg:"'제세동기'를 사용하세요.",action:"use_tool",tool:"defib",target:"heart",hint:"전기 충격.",postMsg:"심박 재개."},
-                    {msg:"'혈관 튜브'로 동맥을 연결하세요.",action:"use_tool",tool:"connector",target:"aorta",hint:"나가는 혈관.",postMsg:"동맥 연결."},
-                    {msg:"정맥을 확인하세요.",action:"click_organ",target:"veins",hint:"돌아오는 혈관.",postMsg:"정맥 확인."},
-                    {msg:"'스캐너'로 전신을 확인하세요.",action:"use_tool",tool:"scanner",target:"body-bg",hint:"전신 순환.",postMsg:"순환 정상."}
-                ],
-                successMsg: "혈액 순환 시스템 복구."
-            },
-            sensory: {
-                name: "어지러운 나공부",
-                symptoms: "감각 이상",
-                dialogues: ["신경계를 확인하세요."],
-                tools: [{id:'light',name:'불빛',desc:'자극'},{id:'microscope',name:'현미경',desc:'관찰'},{id:'connector',name:'신경 튜브',desc:'연결'},{id:'scanner',name:'스캐너',desc:'뇌'}],
-                steps: [
-                    {msg:"'불빛'으로 눈을 검사하세요.",action:"use_tool",tool:"light",target:"eye-left",hint:"동공 반응.",postMsg:"반응 없음."},
-                    {msg:"'현미경'으로 시신경을 보세요.",action:"use_tool",tool:"microscope",target:"eye-left",hint:"손상 확인.",postMsg:"신경 끊어짐."},
-                    {msg:"'신경 튜브'로 연결하세요.",action:"use_tool",tool:"connector",target:"brain",hint:"뇌로 연결.",postMsg:"신경 연결됨."},
-                    {msg:"'스캐너'로 뇌를 확인하세요.",action:"use_tool",tool:"scanner",target:"brain",hint:"뇌 활동.",postMsg:"뇌 활성화."},
-                    {msg:"손을 클릭해 반응을 보세요.",action:"click_organ",target:"hand-area",hint:"운동 신경.",postMsg:"반응 정상."}
-                ],
-                successMsg: "신경 전달 경로 회복."
-            },
-            muscular: {
-                name: "팔 부러진 최선수",
-                symptoms: "골절",
-                dialogues: ["골절 환자입니다."],
-                tools: [{id:'scanner',name:'X-ray',desc:'촬영'},{id:'hand',name:'손',desc:'정복'},{id:'drill',name:'드릴',desc:'고정'},{id:'suture',name:'봉합사',desc:'연결'},{id:'relaxant',name:'영양제',desc:'강화'}],
-                steps: [
-                    {msg:"'X-ray'로 팔을 찍으세요.",action:"use_tool",tool:"scanner",target:"arm-area",hint:"뼈 상태.",postMsg:"골절 확인."},
-                    {msg:"'손'으로 뼈를 맞추세요.",action:"use_tool",tool:"hand",target:"broken-bone",hint:"정복.",postMsg:"뼈 정복."},
-                    {msg:"'드릴'로 고정하세요.",action:"use_tool",tool:"drill",target:"broken-bone",hint:"고정.",postMsg:"핀 고정."},
-                    {msg:"'봉합사'로 근육을 이으세요.",action:"use_tool",tool:"suture",target:"biceps",hint:"근육 연결.",postMsg:"근육 봉합."},
-                    {msg:"'영양제'를 투여하세요.",action:"use_tool",tool:"relaxant",target:"biceps",hint:"기능 회복.",postMsg:"팔 움직임 회복."}
-                ],
-                successMsg: "운동 기능 회복."
-            }
-        };
+  <!-- Bottom Notice Bar (Floating Status) -->
+  <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 py-3 px-4 z-20 shadow-lg">
+    <div class="max-w-md mx-auto flex justify-between items-center text-xs text-slate-500">
+      <div class="flex items-center gap-1.5">
+        <span class="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+        <span>실시간 현장 저장 활성화됨</span>
+      </div>
+      <span id="last-update" class="text-[10px]">최종 변경: 방금 전</span>
+    </div>
+  </div>
 
-        // --- Logic ---
-        let currentCase = null, currentStepIndex = 0, selectedTool = null, mistakes = 0, patientHealth = 100;
-        const els = {
-            dialogBox: document.getElementById('dialog-box'), surgeryStage: document.getElementById('surgery-stage'),
-            toolbox: document.getElementById('toolbox'), caseSelectScreen: document.getElementById('case-select-screen'),
-            headerCaseName: document.getElementById('case-name'), patientStatusText: document.getElementById('patient-status-text'),
-            bpmDisplay: document.getElementById('bpm-display'), ecgLine: document.getElementById('ecg-line'),
-            currentObjective: document.getElementById('current-objective'), badEndingScreen: document.getElementById('bad-ending-screen'),
-            happyEndingScreen: document.getElementById('happy-ending-screen'), successReason: document.getElementById('success-reason'),
-            referenceBook: document.getElementById('reference-book'), refContent: document.getElementById('ref-content')
-        };
+  <script>
+    // User Provided Data - Strictly Unaltered
+    const rawData = {
+      "공통사항": [
+        "2인치, 3인치 타공(파란색 3인치, 노란색 2인치)",
+        "맹커버들 없애버릴 수 있는지",
+        "천장 환풍기 커버 제거, 누런 센서들 교체 가능한지?",
+        "시스템에어컨 케이스 탈거(청소용)"
+      ],
+      "거실": [
+        "실링팬 전기",
+        "다운라이트 타공",
+        "전등스위치 회로 추가(소파, 중앙, 커튼박스+책장)",
+        "커튼박스에 콘센트 추가",
+        "필요없는 콘센트커버 제거 및 교체"
+      ],
+      "안방": [
+        "커튼박스 간접등, 다운라이트 타공",
+        "커튼박스 뒤쪽 콘센트",
+        "스위치 (다운라이트, 간접등 분리)",
+        "스위치 교체",
+        "드레스룸 스위치 교체"
+      ],
+      "서재": [
+        "다운라이트 타공, 전등 교체",
+        "스위치 분리(2인치+간접등, 5인치)",
+        "커튼박스 간접등",
+        "스위치 교체",
+        "전등 제거"
+      ],
+      "작은방": [
+        "3인치 다운라이트",
+        "스위치 교체",
+        "전등 제거"
+      ],
+      "현관": [
+        "다운라이트, 간접등 하나로 묶기(센서)"
+      ],
+      "복도": [
+        "다운라이트 교체"
+      ],
+      "주방": [
+        "인덕션 전용 회로 추가"
+      ]
+    };
 
-        function startGame(caseId) {
-            currentCase = cases[caseId]; currentStepIndex = 0; selectedTool = null; mistakes = 0; patientHealth = 100;
-            els.caseSelectScreen.classList.add('hidden'); els.toolbox.classList.remove('hidden');
-            els.headerCaseName.innerText = `집도 중: ${currentCase.name}`; updateStatus();
-            els.dialogBox.innerHTML = currentCase.dialogues.map(d => `<p class="mb-3">- ${d}</p>`).join('');
-            renderTools(); renderSurgeryStage(caseId); nextStep();
-        }
-        function resetGame() {
-            els.happyEndingScreen.classList.add('hidden'); els.badEndingScreen.classList.add('hidden');
-            els.caseSelectScreen.classList.remove('hidden'); els.toolbox.classList.add('hidden'); els.surgeryStage.innerHTML = '';
-        }
-        function toggleReferenceBook() {
-            els.referenceBook.classList.toggle('hidden');
-            if(!els.referenceBook.classList.contains('hidden')) showRefCategory('digestive');
-        }
-        function showRefCategory(cat) {
-            const data = organReference[cat];
-            let html = `<h3 class="text-2xl font-bold mb-4 text-blue-400 border-b border-slate-600 pb-2">${cat.toUpperCase()}</h3><div class="grid gap-6 grid-cols-1 md:grid-cols-2">`;
-            data.forEach(item => {
-                html += `<div class="bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-lg relative overflow-hidden group">
-                    <div class="flex justify-between items-start mb-3"><strong class="text-lg text-yellow-400">${item.name}</strong></div>
-                    <p class="text-slate-300 text-sm leading-relaxed mb-4 min-h-[40px]">${item.role}</p>
-                    ${item.sim !== 'none' ? `<div id="sim-container-${item.id}" class="h-48 bg-slate-900 rounded-lg flex flex-col items-center justify-center border border-slate-700 relative overflow-hidden"><button onclick="runMiniSim('${item.id}', '${item.sim}')" class="bg-blue-600 hover:bg-blue-500 text-white text-xs px-3 py-1 rounded-full transition flex items-center gap-1"><i data-lucide="play" class="w-3 h-3"></i> 시뮬레이터 실행</button></div>` : ''}
-                </div>`;
-            });
-            html += `</div>`;
-            els.refContent.innerHTML = html; lucide.createIcons();
-        }
+    // State
+    let itemsState = {};
+    let currentFilter = 'all'; // 'all', 'pending', 'completed'
+    let selectedCategory = '전체'; // '전체' or specific category name
 
-        // --- Interactive Mini Simulators ---
-        window.simAction = function(action) {
-            if(action === 'chew') {
-                const jaw = document.getElementById('sim-jaw');
-                const food = document.getElementById('sim-food');
-                jaw.style.animation = "sim-chew 0.5s 3";
-                setTimeout(() => {
-                    food.innerHTML = `<circle cx="45" cy="50" r="3" fill="#ef4444" /><circle cx="55" cy="50" r="3" fill="#ef4444" /><circle cx="50" cy="45" r="3" fill="#ef4444" />`;
-                }, 500);
-            } else if(action === 'churn') {
-                const stomach = document.getElementById('sim-stomach-shape');
-                const food = document.getElementById('sim-stomach-food');
-                stomach.style.animation = "sim-contract 1s 3";
-                setTimeout(() => { food.setAttribute('fill', '#facc15'); }, 1000);
-            } else if(action === 'stimulate') {
-                const signal = document.getElementById('sim-nerve-signal');
-                const brain = document.getElementById('sim-brain');
-                signal.style.animation = 'none'; void signal.offsetWidth; 
-                signal.style.animation = "sim-signal 1.5s linear forwards";
-                setTimeout(() => {
-                    brain.setAttribute('fill', '#f472b6'); setTimeout(() => brain.setAttribute('fill', '#475569'), 500);
-                }, 1500);
-            } else if(action === 'muscle-contract') {
-                document.getElementById('sim-arm-group').setAttribute('transform', 'rotate(-45, 100, 75)');
-                document.getElementById('sim-biceps').setAttribute('d', 'M 60,70 Q 100,60 130,75');
-                document.getElementById('sim-biceps').setAttribute('stroke-width', '12');
-            } else if(action === 'muscle-relax') {
-                document.getElementById('sim-arm-group').setAttribute('transform', 'rotate(0, 100, 75)');
-                document.getElementById('sim-biceps').setAttribute('d', 'M 60,70 Q 100,70 130,75');
-                document.getElementById('sim-biceps').setAttribute('stroke-width', '8');
-            }
-        };
+    // Key for Local Storage
+    const STORAGE_KEY = 'field_electric_checklist_v1';
 
-        function runMiniSim(id, type) {
-            const container = document.getElementById(`sim-container-${id}`);
-            container.innerHTML = ''; 
-            
-            let content = `<div class="relative w-full h-full flex-1 bg-slate-800/50 flex items-center justify-center"><svg id="sim-svg" viewBox="0 0 200 150" class="w-full h-full">`;
-            let controls = '';
+    // Initialize State
+    function initState() {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        itemsState = JSON.parse(saved);
+        // Sync any new keys if rawData changed
+        verifyStateSync();
+      } else {
+        resetStateToDefault();
+      }
+    }
 
-            if (type === 'chew') {
-                content += `<text x="10" y="20" class="sim-label">입</text><path d="M 50,40 Q 100,10 150,40" fill="#fca5a5" stroke="#fff" stroke-width="2" /><g id="sim-jaw"><path d="M 55,60 Q 100,90 145,60" fill="#fca5a5" stroke="#fff" stroke-width="2" /></g><g id="sim-food"><circle cx="100" cy="50" r="10" fill="#ef4444" /></g></svg></div>`;
-                controls = `<button onclick="simAction('chew')" class="bg-blue-600 hover:bg-blue-500 text-white text-xs px-3 py-1 rounded m-2">씹기</button>`;
-            } else if (type === 'churn') {
-                content += `<text x="10" y="20" class="sim-label">위</text><path id="sim-stomach-shape" d="M 60,40 Q 40,80 100,90 Q 160,80 140,40 Q 100,20 60,40" fill="#fef3c7" stroke="#f59e0b" stroke-width="3" /><circle id="sim-stomach-food" cx="100" cy="60" r="8" fill="#ef4444" /></svg></div>`;
-                controls = `<button onclick="simAction('churn')" class="bg-blue-600 hover:bg-blue-500 text-white text-xs px-3 py-1 rounded m-2">소화</button>`;
-            } else if (type === 'bile-secretion') {
-                content += `<text x="10" y="20" class="sim-label">간</text><text x="80" y="30" class="sim-label">쓸개</text><path d="M 50,20 C 20,20 20,60 50,70 L 100,70 L 100,20 Z" fill="#581c87" opacity="0.8" /><circle cx="80" cy="60" r="10" fill="#16a34a" /><path d="M 80,70 L 80,100" stroke="#16a34a" stroke-width="4" /><circle cx="80" cy="60" r="5" fill="#a3e635" style="animation: drip 2s infinite;" /></svg></div>`;
-            } else if (type === 'pancreas-juice') {
-                content += `<text x="10" y="20" class="sim-label">이자</text><path d="M 30,50 L 120,50 Q 140,50 120,80 L 30,80 Z" fill="#fcd34d" /><circle cx="80" cy="65" r="3" fill="#fff" style="animation: drip 1.5s infinite;" /><circle cx="60" cy="65" r="3" fill="#fff" style="animation: drip 1.5s infinite 0.5s;" /></svg></div>`;
-            } else if (type === 'absorb') {
-                 content += `<svg viewBox="0 0 100 100" class="w-full h-full"><path d="M 10,50 Q 30,30 50,50 Q 70,70 90,50" fill="none" stroke="#d97706" stroke-width="8" /><circle cx="50" cy="50" r="3" fill="#fbbf24"><animate attributeName="r" values="3; 8; 3" dur="1s" repeatCount="indefinite" /><animate attributeName="opacity" values="1; 0; 1" dur="1s" repeatCount="indefinite" /></circle><text x="35" y="80" font-size="10" fill="#fbbf24">영양소 흡수</text></svg></div>`;
-            } else if (type === 'absorb-water') {
-                content += `<text x="10" y="20" class="sim-label">큰창자</text><path d="M 20,50 L 120,50" stroke="#a16207" stroke-width="20" stroke-linecap="round" /><circle cx="50" cy="50" r="5" fill="#3b82f6"><animate attributeName="cy" from="50" to="80" dur="2s" repeatCount="indefinite" /><animate attributeName="opacity" from="1" to="0" dur="2s" repeatCount="indefinite" /></circle></svg></div>`;
-            } else if (type === 'airflow') {
-                content += `<text x="10" y="20" class="sim-label">기관지</text><path d="M 70,20 L 70,60 L 40,90 M 70,60 L 100,90" stroke="#cbd5e1" stroke-width="8" /><circle cx="70" cy="20" r="3" fill="#3b82f6"><animateMotion path="M 0,0 L 0,40 L -30,70" dur="2s" repeatCount="indefinite" /></circle><circle cx="70" cy="20" r="3" fill="#3b82f6"><animateMotion path="M 0,0 L 0,40 L 30,70" dur="2s" repeatCount="indefinite" begin="1s" /></circle></svg></div>`;
-            } else if (type === 'flow-fast') {
-                content += `<text x="10" y="20" class="sim-label">동맥</text><rect x="20" y="40" width="100" height="20" fill="#fca5a5" stroke="#ef4444" stroke-width="3" /><circle cx="30" cy="50" r="4" fill="#ef4444"><animate attributeName="cx" from="30" to="110" dur="0.5s" repeatCount="indefinite" /></circle></svg></div>`;
-            } else if (type === 'flow-slow') {
-                content += `<text x="10" y="20" class="sim-label">정맥 (판막)</text><rect x="20" y="40" width="100" height="20" fill="#93c5fd" stroke="#3b82f6" stroke-width="2" /><path d="M 60,40 L 70,50 L 60,60" stroke="white" stroke-width="2" fill="none" /><circle cx="30" cy="50" r="4" fill="#1d4ed8"><animate attributeName="cx" from="30" to="110" dur="2s" repeatCount="indefinite" /></circle></svg></div>`;
-            } else if (type === 'beat') {
-                content += `<text x="10" y="20" class="sim-label">심장</text><path d="M 50,30 C 40,10 10,10 10,40 C 10,70 50,90 50,90 C 50,90 90,70 90,40 C 90,10 60,10 50,30" fill="#ef4444" style="animation: sim-beat 0.8s infinite;" /></svg></div>`;
-            } else if (type === 'breathe') {
-                content += `<text x="10" y="20" class="sim-label">폐</text><path d="M 30,20 C 10,20 10,70 30,90 C 30,90 50,70 50,20" fill="#fca5a5" style="animation: sim-breathe 2s infinite alternate; transform-origin: center;" /><path d="M 70,20 C 90,20 90,70 70,90 C 70,90 50,70 50,20" fill="#fca5a5" style="animation: sim-breathe 2s infinite alternate; transform-origin: center;" /></svg></div>`;
-            } else if (type === 'move-updown') {
-                content += `<text x="10" y="20" class="sim-label">가로막</text><path d="M 10,50 Q 50,20 90,50" fill="none" stroke="#d97706" stroke-width="5" stroke-linecap="round"><animate attributeName="d" values="M 10,50 Q 50,20 90,50; M 10,50 Q 50,80 90,50; M 10,50 Q 50,20 90,50" dur="2s" repeatCount="indefinite" /></path></svg></div>`;
-            } else if (type === 'transmit') {
-                content += `<text x="10" y="20" class="sim-label">감각</text><text x="80" y="20" class="sim-label">신경</text><text x="160" y="20" class="sim-label">뇌</text><circle cx="30" cy="75" r="10" fill="#fca5a5" /><path id="sim-brain" d="M 160,60 C 150,60 150,90 180,90 C 200,90 200,60 190,60" fill="#475569" /><line x1="40" y1="75" x2="160" y2="75" stroke="#cbd5e1" stroke-width="4" /><circle id="sim-nerve-signal" cx="40" cy="75" r="4" fill="#fbbf24" opacity="0" style="offset-path: path('M 40,75 L 160,75');" /></svg></div>`;
-                controls = `<button onclick="simAction('stimulate')" class="bg-blue-600 hover:bg-blue-500 text-white text-xs px-3 py-1 rounded m-2">자극 주기</button>`;
-            } else if (type === 'contract') {
-                content += `<text x="10" y="20" class="sim-label">뼈</text><text x="10" y="40" fill="#f87171" font-size="10" font-weight="bold">근육</text><line x1="50" y1="75" x2="100" y2="75" stroke="#cbd5e1" stroke-width="10" stroke-linecap="round"/><g id="sim-arm-group" style="transition: transform 0.5s; transform-origin: 100px 75px;"><line x1="100" y1="75" x2="160" y2="75" stroke="#cbd5e1" stroke-width="8" stroke-linecap="round"/><circle cx="165" cy="75" r="5" fill="#cbd5e1"/></g><path id="sim-biceps" d="M 60,70 Q 100,70 130,75" fill="none" stroke="#fca5a5" stroke-width="8" stroke-linecap="round" style="transition: all 0.5s;" /></svg></div>`;
-                controls = `<div class="flex gap-2 m-2"><button onclick="simAction('muscle-contract')" class="bg-red-600 hover:bg-red-500 text-white text-xs px-3 py-1 rounded">수축</button><button onclick="simAction('muscle-relax')" class="bg-blue-600 hover:bg-blue-500 text-white text-xs px-3 py-1 rounded">이완</button></div>`;
-            } else if (type === 'bone-support') {
-                content += `<text x="10" y="20" class="sim-label">뼈 (지지)</text><line x1="50" y1="20" x2="50" y2="120" stroke="#cbd5e1" stroke-width="15" stroke-linecap="round" /><line x1="20" y1="120" x2="80" y2="120" stroke="#cbd5e1" stroke-width="15" stroke-linecap="round" /></svg></div>`;
-            }
+    function verifyStateSync() {
+      let updated = false;
+      Object.keys(rawData).forEach(cat => {
+        rawData[cat].forEach((text, index) => {
+          const id = `${cat}_${index}`;
+          if (!itemsState[id]) {
+            itemsState[id] = { checked: false, note: '' };
+            updated = true;
+          }
+        });
+      });
+      if (updated) saveState();
+    }
 
-            container.innerHTML = content + (controls ? `<div class="bg-slate-800 w-full flex justify-center border-t border-slate-700">${controls}</div>` : '');
-        }
+    function resetStateToDefault() {
+      itemsState = {};
+      Object.keys(rawData).forEach(cat => {
+        rawData[cat].forEach((text, index) => {
+          const id = `${cat}_${index}`;
+          itemsState[id] = { checked: false, note: '' };
+        });
+      });
+      saveState();
+    }
 
-        // --- Game Functions ---
-        function renderTools() {
-            els.toolbox.innerHTML = currentCase.tools.map(tool => `
-                <button type="button" id="tool-${tool.id}" onclick="selectTool('${tool.id}')" class="tool-btn flex flex-col items-center justify-center bg-slate-700 border border-slate-600 rounded-xl w-20 h-20 active:scale-95 group relative">
-                    <div class="mb-1 text-slate-300 group-hover:text-blue-400 transition-colors">
-                        <i data-lucide="${TOOL_ICONS[tool.id] || 'circle'}" class="w-8 h-8"></i>
-                    </div>
-                    <span class="text-[10px] text-slate-400 font-bold group-hover:text-white text-center leading-tight">${tool.name}</span>
-                </button>
-            `).join('');
-            lucide.createIcons();
-        }
-        function selectTool(toolId) {
-            if (selectedTool) document.getElementById(`tool-${selectedTool}`).classList.remove('selected');
-            if (selectedTool === toolId) { selectedTool = null; document.body.style.cursor = 'default'; return; }
-            selectedTool = toolId; document.getElementById(`tool-${toolId}`).classList.add('selected'); document.body.style.cursor = 'crosshair';
-            const tool = currentCase.tools.find(t => t.id === toolId); showMessage(`🛠 도구 선택: ${tool.name} - ${tool.desc}`, "text-blue-300 font-bold");
-        }
-        function nextStep() {
-            if (currentStepIndex >= currentCase.steps.length) { finishGame(true); return; }
-            const step = currentCase.steps[currentStepIndex]; showMessage(`[단계 ${currentStepIndex + 1}/${currentCase.steps.length}] ${step.msg}`); els.currentObjective.innerText = step.hint;
-        }
-        function handleInteraction(targetId) {
-            const step = currentCase.steps[currentStepIndex];
-            let isCorrect = false;
+    function saveState() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(itemsState));
+      updateProgress();
+      document.getElementById('last-update').innerText = `최종 변경: ${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
+    }
 
-            // Alias mapping to fix bug where stomach parts weren't recognized as stomach
-            let checkId = targetId;
-            if (step.target === 'stomach' && (targetId === 'stomach-inner' || targetId === 'food-lump')) checkId = 'stomach';
+    function resetAll() {
+      if (confirm('모든 체크 상태와 메모를 초기화하시겠습니까?')) {
+        resetStateToDefault();
+        renderCategoryChips();
+        renderChecklist();
+      }
+    }
 
-            if (step.action === "click_organ") {
-                if (checkId === step.target && !selectedTool) isCorrect = true;
-                else if (selectedTool) { failAction("도구를 내려놓고 장기를 먼저 확인하세요."); return; }
-            } else if (step.action === "use_tool") {
-                if (checkId === step.target && selectedTool === step.tool) isCorrect = true;
-                else if (!selectedTool) { failAction("도구를 선택해야 합니다."); return; }
-                else if (selectedTool !== step.tool) { failAction("잘못된 도구입니다!"); return; }
-            }
-            if (isCorrect) successAction(targetId);
-            else if (targetId !== 'body-bg' && !targetId.includes('bg')) failAction("지금 치료해야 할 부위가 아닙니다.");
-        }
-        function successAction(targetId) {
-            const step = currentCase.steps[currentStepIndex]; updateVisuals(targetId);
-            const feedback = step.postMsg ? `✅ ${step.postMsg}` : "✅ 성공! 기능이 회복되었습니다.";
-            showMessage(feedback, "text-green-400"); currentStepIndex++;
-            if(selectedTool) { document.getElementById(`tool-${selectedTool}`).classList.remove('selected'); selectedTool = null; document.body.style.cursor = 'default'; }
-            nextStep();
-        }
-        function failAction(msg) {
-            mistakes++; patientHealth -= 15; showMessage(`⚠ 경고: ${msg}`, "text-red-400 font-bold"); updateStatus();
-            if (patientHealth <= 0) finishGame(false);
-        }
-        function finishGame(isSuccess) {
-            if (isSuccess) { els.successReason.innerText = currentCase.successMsg; setTimeout(() => els.happyEndingScreen.classList.remove('hidden'), 1000); }
-            else { setTimeout(() => els.badEndingScreen.classList.remove('hidden'), 500); }
-        }
-        function showMessage(text, className="text-slate-200") {
-            const p = document.createElement('p'); p.className = `mb-3 fade-in ${className}`; p.innerText = text;
-            els.dialogBox.appendChild(p); els.dialogBox.scrollTop = els.dialogBox.scrollHeight;
-        }
-        function updateStatus() {
-            els.bpmDisplay.innerText = patientHealth > 0 ? (80 - mistakes * 15) : 0;
-            if (patientHealth <= 0) { els.patientStatusText.innerText = "DEAD"; els.ecgLine.classList.add('flat'); }
-            else if (patientHealth < 50) { els.patientStatusText.innerText = "CRITICAL"; els.patientStatusText.className = "text-red-500 font-bold text-sm blink"; els.ecgLine.classList.add('danger'); }
-            else { els.patientStatusText.innerText = "STABLE"; els.patientStatusText.className = "text-green-500 font-bold text-sm"; els.ecgLine.classList.remove('danger', 'flat'); }
-        }
-        function renderSurgeryStage(caseId) {
-            const bodyPath = `<g id="body-bg" onclick="handleInteraction('body-bg')"><path d="M 150,20 Q 120,20 120,60 Q 120,80 135,90 L 135,100 L 90,110 L 80,250 L 100,250 Q 100,350 90,400 L 100,530 L 200,530 L 210,400 Q 200,350 200,250 L 220,250 L 210,110 L 165,100 L 165,90 Q 180,80 180,60 Q 180,20 150,20 Z" fill="#334155" stroke="#475569" stroke-width="2" class="organ" /></g>`;
-            let organs = '';
-            // Backgrounds
-            if (caseId !== 'digestive') organs += `<path d="M 155,250 C 175,240 190,260 180,290 C 160,300 150,280 155,250" fill="#b45309" opacity="0.2" />`;
-            if (caseId !== 'respiratory') organs += `<path d="M 160,130 C 160,110 190,110 200,130 C 215,160 215,220 200,240 C 170,250 160,230 160,130" fill="#7f1d1d" opacity="0.2" /><path d="M 140,130 C 140,110 110,110 100,130 C 85,160 85,220 100,240 C 130,250 140,230 140,130" fill="#7f1d1d" opacity="0.2" />`;
-            if (caseId !== 'sensory') organs += `<path d="M 130,35 C 120,35 120,70 150,70 C 180,70 180,35 170,35 Q 150,25 130,35" fill="#e2e8f0" opacity="0.2" />`;
-            
-            // Interactive Layers with HIT AREAS
-            if (caseId === 'digestive') {
-                organs += `
-                    <!-- Head -->
-                    <circle id="head" onclick="handleInteraction('head')" cx="150" cy="70" r="20" fill="transparent" stroke="#fca5a5" stroke-dasharray="4" class="organ hit-area"/>
-                    
-                    <!-- Esophagus -->
-                    <path d="M 150,90 L 150,240" class="hit-area" onclick="handleInteraction('esophagus')" />
-                    <path id="esophagus" onclick="handleInteraction('esophagus')" d="M 150,90 L 150,240" stroke="#fcd34d" stroke-width="12" class="organ" stroke-opacity="0.5"/>
-                    
-                    <!-- Stomach -->
-                    <path d="M 155,250 C 175,240 190,260 180,300 C 160,310 145,280 155,250" class="hit-area" style="stroke-width:60px;" onclick="handleInteraction('stomach')" />
-                    <circle id="stomach-inner" onclick="event.stopPropagation(); handleInteraction('stomach-inner')" cx="165" cy="280" r="20" fill="transparent" class="organ" />
-                    <path id="stomach" onclick="handleInteraction('stomach')" d="M 155,250 C 175,240 190,260 180,300 C 160,310 145,280 155,250" fill="#fef3c7" stroke="#f59e0b" stroke-width="2" class="organ"/>
-                    
-                    <!-- Food Lump (Top Layer) -->
-                    <g id="food-lump" class="hidden organ" onclick="event.stopPropagation(); handleInteraction('food-lump')">
-                        <circle cx="165" cy="275" r="15" fill="#ef4444" class="hit-area-fill" style="opacity:0; stroke-width:40px; stroke:white;" /> 
-                        <circle cx="165" cy="275" r="12" fill="#ef4444" />
-                        <circle cx="170" cy="285" r="8" fill="#ef4444" />
-                    </g>
-                    
-                    <!-- Small Intestine (Yellow/Orange, Winding) -->
-                    <path d="M 150,320 Q 180,310 170,340 T 150,360 T 130,340 T 150,320" class="hit-area" onclick="handleInteraction('small-intestine')" />
-                    <path id="small-intestine" onclick="handleInteraction('small-intestine')" d="M 150,320 Q 180,310 170,340 T 150,360 T 130,340 T 150,320" fill="none" stroke="#d97706" stroke-width="12" stroke-linecap="round" class="organ"/>
-                    
-                    <!-- Large Intestine (Brown, Surrounding) -->
-                    <path d="M 120,300 L 120,380 L 180,380 L 180,300" class="hit-area" onclick="handleInteraction('large-intestine')" />
-                    <path id="large-intestine" onclick="handleInteraction('large-intestine')" d="M 120,300 L 120,380 L 180,380 L 180,300" fill="none" stroke="#a16207" stroke-width="18" stroke-linecap="round" stroke-linejoin="round" class="organ"/>
-                `;
-            } else if (caseId === 'respiratory') {
-                organs += `
-                    <circle id="head" onclick="handleInteraction('head')" cx="150" cy="75" r="15" fill="transparent" stroke="#fca5a5" stroke-width="2" stroke-dasharray="4" class="organ hit-area"/>
-                    
-                    <path d="M 150,90 L 150,130 M 150,130 L 130,160 M 150,130 L 170,160" class="hit-area" onclick="handleInteraction('bronchi')" />
-                    <path id="bronchi" onclick="handleInteraction('bronchi')" d="M 150,90 L 150,130 M 150,130 L 130,160 M 150,130 L 170,160" stroke="#cbd5e1" stroke-width="8" class="organ"/>
-                    
-                    <g id="lungs" onclick="handleInteraction('lungs')" class="organ" style="transition: transform 1s">
-                        <path d="M 145,140 C 100,140 90,240 145,240 Z" fill="#fca5a5" stroke="#e11d48" opacity="0.9" />
-                        <path d="M 155,140 C 200,140 210,240 155,240 Z" fill="#fca5a5" stroke="#e11d48" opacity="0.9" />
-                    </g>
-                    
-                    <path d="M 90,240 Q 150,200 210,240" class="hit-area" onclick="handleInteraction('diaphragm')" />
-                    <path id="diaphragm" onclick="handleInteraction('diaphragm')" d="M 90,240 Q 150,200 210,240" fill="none" stroke="#d97706" stroke-width="8" stroke-linecap="round" class="organ hit-area" />
-                `;
-            } else if (caseId === 'circulatory') {
-                organs += `
-                    <g id="heart" onclick="handleInteraction('heart')" class="organ hit-area" transform="translate(150, 180)"><path d="M 0,-15 C -20,-40 -50,-10 -5,35 C 40,-10 20,-40 0,-15" fill="#991b1b" stroke="#ef4444" stroke-width="2" transform="scale(1.5)" /></g>
-                    
-                    <path d="M 150,165 C 150,140 180,140 180,190" class="hit-area" onclick="handleInteraction('aorta')" />
-                    <path id="aorta" onclick="handleInteraction('aorta')" d="M 150,165 C 150,140 180,140 180,190" stroke="#ef4444" stroke-width="6" stroke-dasharray="4,2" fill="none" class="organ" />
-                    
-                    <path d="M 120,165 C 120,190 150,300 120,350" class="hit-area" onclick="handleInteraction('veins')" />
-                    <path id="veins" onclick="handleInteraction('veins')" d="M 120,165 C 120,190 150,300 120,350" stroke="#3b82f6" stroke-width="6" fill="none" class="organ" />
-                    
-                    <circle id="blood-flow" r="3" fill="#fff" class="hidden"><animateMotion dur="1s" repeatCount="indefinite" path="M 150,165 C 150,140 180,140 180,190" /></circle>
-                `;
-            } else if (caseId === 'sensory') {
-                organs += `
-                    <path id="brain" onclick="handleInteraction('brain')" d="M 130,35 C 120,35 120,70 150,70 C 180,70 180,35 170,35 Q 150,25 130,35" fill="#fce7f3" stroke="#db2777" class="organ hit-area"/>
-                    <g id="eye-left" onclick="handleInteraction('eye-left')" class="organ hit-area"><circle cx="135" cy="60" r="4" fill="#fff" stroke="#cbd5e1"/><circle cx="135" cy="60" r="1.5" fill="#000"/></g>
-                    <rect id="hand-area" onclick="handleInteraction('hand-area')" x="210" y="250" width="30" height="30" fill="transparent" stroke="#a855f7" stroke-dasharray="4" class="organ hit-area" />
-                `;
-            } else if (caseId === 'muscular') {
-                organs += `
-                    <rect id="arm-area" onclick="handleInteraction('arm-area')" x="200" y="120" width="50" height="100" fill="transparent" stroke="#a855f7" stroke-dasharray="4" class="organ hit-area" />
-                    <g id="arm-detail" class="hidden" transform="translate(180, 100) scale(0.9)">
-                        <path d="M 30,20 L 60,100" stroke="#94a3b8" stroke-width="15" stroke-linecap="round"/>
-                        <circle cx="60" cy="100" r="10" fill="#e2e8f0"/>
-                        <g onclick="handleInteraction('broken-bone')" class="organ hit-area" style="transform-origin: 60px 100px; transform: rotate(15deg);"><path d="M 60,100 L 80,180" stroke="transparent" stroke-width="40" /></g>
-                        <g id="broken-bone" onclick="handleInteraction('broken-bone')" class="organ" style="transform-origin: 60px 100px; transform: rotate(15deg);"><path d="M 60,100 L 80,180" stroke="#94a3b8" stroke-width="12" stroke-linecap="round"/></g>
-                        <path onclick="handleInteraction('biceps')" d="M 40,40 Q 20,80 50,120" fill="none" stroke="transparent" stroke-width="35" class="hit-area" />
-                        <path id="biceps" onclick="handleInteraction('biceps')" d="M 40,40 Q 20,80 50,120" fill="none" stroke="#fca5a5" stroke-width="12" stroke-linecap="round" stroke-dasharray="5,2" class="organ" />
-                    </g>
-                `;
-            }
-            els.surgeryStage.innerHTML = `<svg viewBox="0 0 300 550" class="h-full w-auto drop-shadow-2xl">${bodyPath}${organs}</svg>`;
-        }
+    // Toggle Item Checked State
+    function toggleItem(id) {
+      itemsState[id].checked = !itemsState[id].checked;
+      saveState();
+      
+      // Update UI elements gracefully without full re-render for better UX
+      const card = document.getElementById(`card-${id}`);
+      const checkbox = document.getElementById(`check-${id}`);
+      const iconCheck = document.getElementById(`icon-check-${id}`);
+      const textSpan = document.getElementById(`text-${id}`);
 
-        function updateVisuals(targetId) {
-            const el = document.getElementById(targetId);
-            if (!el && targetId !== 'body-bg') return;
-            if (targetId === 'stomach') {
-                if (currentStepIndex === 4) {
-                    el.setAttribute('stroke', '#ef4444'); el.setAttribute('stroke-dasharray', '5,2');
-                    document.getElementById('food-lump').classList.remove('hidden');
-                } else if (currentStepIndex === 7 && selectedTool === 'suture') {
-                    el.setAttribute('stroke', '#fcd34d'); el.removeAttribute('stroke-dasharray');
-                }
-            } else if (targetId === 'food-lump') { el.classList.add('hidden'); }
-            else if (targetId === 'stomach-inner') { el.setAttribute('fill', 'rgba(134, 239, 172, 0.5)'); }
-            else if (targetId === 'small-intestine') { el.setAttribute('stroke', '#fcd34d'); }
-            else if (targetId === 'large-intestine') { el.setAttribute('stroke', '#854d0e'); }
-            else if (targetId === 'diaphragm') {
-                if (currentStepIndex === 4) el.setAttribute('stroke', '#fcd34d');
-                else if (currentStepIndex === 5) {
-                    el.setAttribute('d', "M 90,260 Q 150,280 210,260");
-                    document.getElementById('lungs').setAttribute('transform', 'scale(1.1) translate(-15, -5)');
-                }
-            } else if (targetId === 'head') {
-                if(currentCase.tools.find(t=>t.id==='oxygen') && selectedTool==='oxygen') {
-                    el.setAttribute('fill', 'rgba(125, 211, 252, 0.3)'); el.setAttribute('stroke', '#38bdf8');
-                }
-            } else if (targetId === 'heart') { if(selectedTool === 'defib') el.classList.add('pulse-target'); }
-            else if (targetId === 'aorta') { el.removeAttribute('stroke-dasharray'); document.getElementById('blood-flow').classList.remove('hidden'); }
-            else if (targetId === 'veins') { el.setAttribute('stroke', '#2563eb'); }
-            else if (targetId === 'body-bg') {
-                 const svg = document.querySelector('#surgery-stage svg');
-                 const scanLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
-                 scanLine.setAttribute("x1", "0"); scanLine.setAttribute("y1", "0"); scanLine.setAttribute("x2", "300"); scanLine.setAttribute("y2", "0");
-                 scanLine.setAttribute("stroke", "#38bdf8"); scanLine.setAttribute("stroke-width", "5"); scanLine.setAttribute("opacity", "0.8");
-                 const anim = document.createElementNS("http://www.w3.org/2000/svg", "animate");
-                 anim.setAttribute("attributeName", "y1"); anim.setAttribute("from", "0"); anim.setAttribute("to", "550"); anim.setAttribute("dur", "1.5s"); anim.setAttribute("fill", "freeze");
-                 const anim2 = document.createElementNS("http://www.w3.org/2000/svg", "animate");
-                 anim2.setAttribute("attributeName", "y2"); anim2.setAttribute("from", "0"); anim2.setAttribute("to", "550"); anim2.setAttribute("dur", "1.5s"); anim2.setAttribute("fill", "freeze");
-                 scanLine.appendChild(anim); scanLine.appendChild(anim2); svg.appendChild(scanLine);
-            } else if (targetId === 'eye-left') { el.querySelector('circle:last-child').setAttribute('fill', '#000'); }
-            else if (targetId === 'brain') { el.setAttribute('fill', '#f472b6'); }
-            else if (targetId === 'hand-area') { el.setAttribute('fill', '#fca5a5'); }
-            else if (targetId === 'broken-bone') {
-                if (currentStepIndex === 1) el.setAttribute('d', "M 60,100 L 60,180");
-                else if (currentStepIndex === 2) el.setAttribute('stroke', '#94a3b8');
-            } else if (targetId === 'biceps') {
-                if (currentStepIndex === 3) el.removeAttribute('stroke-dasharray');
-                else if (currentStepIndex === 4) el.setAttribute('stroke', '#f87171');
-            } else if (targetId === 'arm-area') {
-                el.classList.add('hidden'); document.getElementById('arm-detail').classList.remove('hidden');
-            }
+      if (itemsState[id].checked) {
+        card.classList.remove('bg-white', 'border-slate-200');
+        card.classList.add('bg-slate-100/80', 'border-slate-300');
+        checkbox.classList.add('bg-blue-600', 'border-blue-600');
+        iconCheck.classList.remove('hidden');
+        textSpan.classList.add('line-through', 'text-slate-400');
+      } else {
+        card.classList.add('bg-white', 'border-slate-200');
+        card.classList.remove('bg-slate-100/80', 'border-slate-300');
+        checkbox.classList.remove('bg-blue-600', 'border-blue-600');
+        iconCheck.classList.add('hidden');
+        textSpan.classList.remove('line-through', 'text-slate-400');
+      }
+
+      // If viewing filtered list, full render to hide items
+      if (currentFilter !== 'all') {
+        renderChecklist();
+      }
+      renderCategoryChips(); // Update chip counts
+    }
+
+    // Toggle Memo Textarea Visibility
+    function toggleNoteField(id) {
+      const field = document.getElementById(`note-container-${id}`);
+      field.classList.toggle('hidden');
+    }
+
+    // Save Memo Text
+    function saveNote(id, text) {
+      itemsState[id].note = text;
+      saveState();
+    }
+
+    // Calculate & Display Progress
+    function updateProgress() {
+      let total = 0;
+      let completed = 0;
+
+      Object.keys(itemsState).forEach(id => {
+        total++;
+        if (itemsState[id].checked) completed++;
+      });
+
+      const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
+      
+      document.getElementById('progress-percent').innerText = `${percent}%`;
+      document.getElementById('progress-bar').style.width = `${percent}%`;
+      document.getElementById('completed-count').innerText = completed;
+      document.getElementById('total-count').innerText = total;
+    }
+
+    // Set Filters
+    function setFilter(filter) {
+      currentFilter = filter;
+      
+      // Update Filter Tabs UI
+      const filters = ['all', 'pending', 'completed'];
+      filters.forEach(f => {
+        const btn = document.getElementById(`btn-filter-${f}`);
+        if (f === filter) {
+          btn.className = "flex-1 py-2 text-center rounded-lg transition-all text-slate-800 bg-white shadow-sm";
+        } else {
+          btn.className = "flex-1 py-2 text-center rounded-lg transition-all text-slate-500 hover:text-slate-800";
         }
-    </script>
+      });
+
+      renderChecklist();
+    }
+
+    function setCategoryFilter(category) {
+      selectedCategory = category;
+      renderCategoryChips();
+      renderChecklist();
+    }
+
+    // Render Filters Chips
+    function renderCategoryChips() {
+      const container = document.getElementById('category-chips');
+      container.innerHTML = '';
+
+      // "전체" Chip
+      let totalAll = 0;
+      let completedAll = 0;
+      Object.keys(itemsState).forEach(id => {
+        totalAll++;
+        if (itemsState[id].checked) completedAll++;
+      });
+
+      const allActive = selectedCategory === '전체';
+      const allChip = document.createElement('button');
+      allChip.className = `flex-shrink-0 px-4 py-2 rounded-full text-xs font-semibold border transition-all ${allActive ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'bg-white text-slate-600 border-slate-200'}`;
+      allChip.innerHTML = `전체 <span class="ml-1 opacity-70">${completedAll}/${totalAll}</span>`;
+      allChip.onclick = () => setCategoryFilter('전체');
+      container.appendChild(allChip);
+
+      // Category Chips
+      Object.keys(rawData).forEach(cat => {
+        let totalCat = 0;
+        let completedCat = 0;
+        rawData[cat].forEach((_, index) => {
+          totalCat++;
+          if (itemsState[`${cat}_${index}`].checked) completedCat++;
+        });
+
+        const active = selectedCategory === cat;
+        const chip = document.createElement('button');
+        chip.className = `flex-shrink-0 px-4 py-2 rounded-full text-xs font-semibold border transition-all ${active ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'bg-white text-slate-600 border-slate-200'}`;
+        chip.innerHTML = `${cat} <span class="ml-1 opacity-70">${completedCat}/${totalCat}</span>`;
+        chip.onclick = () => setCategoryFilter(cat);
+        container.appendChild(chip);
+      });
+    }
+
+    // Render Main Checklist
+    function renderChecklist() {
+      const container = document.getElementById('checklist-container');
+      container.innerHTML = '';
+
+      const targetCategories = selectedCategory === '전체' ? Object.keys(rawData) : [selectedCategory];
+      let visibleItemCount = 0;
+
+      targetCategories.forEach(categoryName => {
+        const items = rawData[categoryName];
+        
+        // Filter items within the category
+        const filteredItems = items.map((text, index) => ({
+          id: `${categoryName}_${index}`,
+          text: text,
+          state: itemsState[`${categoryName}_${index}`]
+        })).filter(item => {
+          if (currentFilter === 'pending') return !item.state.checked;
+          if (currentFilter === 'completed') return item.state.checked;
+          return true;
+        });
+
+        if (filteredItems.length === 0) return; // Hide category if empty under current filters
+
+        visibleItemCount += filteredItems.length;
+
+        // Category Box
+        const section = document.createElement('section');
+        section.className = "bg-white border border-slate-200/80 rounded-2xl p-4 shadow-sm space-y-3";
+
+        // Header
+        const header = document.createElement('div');
+        header.className = "flex items-center justify-between pb-2 border-b border-slate-100";
+        header.innerHTML = `
+          <h2 class="font-bold text-slate-900 flex items-center gap-2">
+            <span class="w-1.5 h-4 bg-blue-600 rounded-full"></span>
+            ${categoryName}
+          </h2>
+          <span class="text-xs text-slate-400 font-semibold">${filteredItems.length}개 항목</span>
+        `;
+        section.appendChild(header);
+
+        // List container
+        const listContainer = document.createElement('div');
+        listContainer.className = "space-y-2.5";
+
+        filteredItems.forEach(item => {
+          const itemCard = document.createElement('div');
+          itemCard.id = `card-${item.id}`;
+          
+          const isChecked = item.state.checked;
+          itemCard.className = `border rounded-xl p-3.5 transition-all ${
+            isChecked ? 'bg-slate-100/80 border-slate-300' : 'bg-white border-slate-200'
+          }`;
+
+          itemCard.innerHTML = `
+            <div class="flex items-start gap-3">
+              <!-- Custom Checkbox (Touch Target 44px min inside flex) -->
+              <div onclick="toggleItem('${item.id}')" class="flex-shrink-0 w-6 h-6 rounded-md border-2 flex items-center justify-center cursor-pointer transition-colors ${
+                isChecked ? 'bg-blue-600 border-blue-600' : 'border-slate-300'
+              }" id="check-${item.id}">
+                <svg id="icon-check-${item.id}" class="h-4 w-4 text-white ${isChecked ? '' : 'hidden'}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+
+              <!-- Text Area -->
+              <div class="flex-1 min-w-0">
+                <span onclick="toggleItem('${item.id}')" id="text-${item.id}" class="text-sm font-semibold leading-relaxed break-keep cursor-pointer select-none ${
+                  isChecked ? 'line-through text-slate-400' : 'text-slate-700'
+                }">
+                  ${item.text}
+                </span>
+                
+                <!-- Interaction buttons -->
+                <div class="flex gap-4 mt-2 text-xs font-semibold text-slate-400">
+                  <button onclick="toggleNoteField('${item.id}')" class="flex items-center gap-1.5 hover:text-slate-600 active:text-blue-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                    <span>현장 메모</span>
+                  </button>
+                </div>
+
+                <!-- Note Input Container -->
+                <div id="note-container-${item.id}" class="mt-2.5 ${item.state.note ? '' : 'hidden'}">
+                  <textarea 
+                    oninput="saveNote('${item.id}', this.value)"
+                    placeholder="현장 특이사항이나 협의 내용을 적으세요..."
+                    class="w-full text-xs bg-slate-50 border border-slate-200 rounded-lg p-2.5 focus:outline-none focus:border-slate-400 transition-colors placeholder:text-slate-300 resize-none"
+                    rows="2"
+                  >${item.state.note || ''}</textarea>
+                </div>
+              </div>
+            </div>
+          `;
+          listContainer.appendChild(itemCard);
+        });
+
+        section.appendChild(listContainer);
+        container.appendChild(section);
+      });
+
+      // Empty State
+      if (visibleItemCount === 0) {
+        const emptyBox = document.createElement('div');
+        emptyBox.className = "text-center py-12 bg-white border border-slate-200 rounded-2xl shadow-sm";
+        emptyBox.innerHTML = `
+          <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto h-12 w-12 text-slate-300 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+          </svg>
+          <p class="text-sm font-semibold text-slate-500">필터에 해당하는 작업 항목이 없습니다.</p>
+        `;
+        container.appendChild(emptyBox);
+      }
+    }
+
+    // Share/Export Status Text to Clipboard (Kakao/Text format)
+    function shareStatus() {
+      let shareText = `🚧 [현장 전기공사 체크 현황] 🚧\n\n`;
+      let total = 0;
+      let completed = 0;
+
+      Object.keys(rawData).forEach(cat => {
+        let catText = `📍 ${cat}\n`;
+        let hasItem = false;
+        
+        rawData[cat].forEach((text, index) => {
+          total++;
+          const item = itemsState[`${cat}_${index}`];
+          const emoji = item.checked ? '✅' : '⬜';
+          if (item.checked) completed++;
+          
+          catText += `${emoji} ${text}\n`;
+          if (item.note) {
+            catText += `   📝 메모: ${item.note}\n`;
+          }
+          hasItem = true;
+        });
+        
+        if (hasItem) {
+          shareText += catText + '\n';
+        }
+      });
+
+      const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
+      shareText = `📊 공정률: ${percent}% (${completed}/${total} 완료)\n\n` + shareText;
+
+      // Copy using legacy compatibility logic for iframe sandbox constraints
+      const tempTextArea = document.createElement('textarea');
+      tempTextArea.value = shareText;
+      document.body.appendChild(tempTextArea);
+      tempTextArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(tempTextArea);
+
+      // Display Alert modal alternative (Toast notification)
+      showToast('체크 현황과 메모가 클립보드에 복사되었습니다! 카카오톡이나 문자 메시지에 붙여넣어 공유하세요.');
+    }
+
+    // Simple Custom Toast Notification
+    function showToast(message) {
+      const toast = document.createElement('div');
+      toast.className = "fixed top-5 left-4 right-4 md:left-auto md:w-96 bg-slate-900 text-white text-xs px-4 py-3 rounded-xl shadow-xl z-50 transition-all duration-300 opacity-0 transform translate-y-[-20px] leading-relaxed break-keep";
+      toast.innerText = message;
+      document.body.appendChild(toast);
+      
+      // Animate In
+      setTimeout(() => {
+        toast.classList.remove('opacity-0', 'translate-y-[-20px]');
+      }, 50);
+
+      // Animate Out & Remove
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-[-20px]');
+        setTimeout(() => toast.remove(), 300);
+      }, 4000);
+    }
+
+    // App Startup
+    window.onload = function() {
+      initState();
+      renderCategoryChips();
+      renderChecklist();
+    }
+  </script>
 </body>
 </html>
